@@ -2,18 +2,18 @@
 using UraniumUI.Material.Controls;
 using MPowerKit.ProgressRing;
 using Firebase;
-
 using Microsoft.Maui.Handlers;
+using InstaLoaderMaui.Platforms.Android;
+
 
 
 #if ANDROID
 using Android.Content;
 using Android.Views.InputMethods;
 using Android.OS;
-using Android.Util;
 using AndroidHUD;
 using Firebase.Analytics;
-using Java.Nio.FileNio.Attributes;
+using Green.Mobileapps.Instaloader;
 #endif
 
 namespace InstaLoaderMaui
@@ -763,9 +763,9 @@ namespace InstaLoaderMaui
         private async void OnDownloadClicked(object sender, EventArgs e)
         {
             StatusLabel.Text = "";
-            var url = main_textfield.Text?.Trim();
-
-            Dispatcher.Dispatch(async () => await DownloadUrl(url));
+            var input = main_textfield.Text?.Trim();
+            DownloadUrl(input);
+            //Dispatcher.Dispatch(async () => await DownloadUrl(input));
         }
 
         private void OnTextChanged(object sender, TextChangedEventArgs e)
@@ -867,8 +867,8 @@ namespace InstaLoaderMaui
             ShowPreparingUI();
 
             // trim input
-            string url = input[input.IndexOf("https://")..];
-            string domain = url[(url.IndexOf("https://") + 8)..];
+            input = input[input.IndexOf("https://")..];
+            string domain = input[(input.IndexOf("https://") + 8)..];
             if (domain.Contains('/'))
             {
                 domain = domain[..domain.IndexOf('/')];
@@ -892,13 +892,14 @@ namespace InstaLoaderMaui
             }
 #endif
 
-            Dispatcher.Dispatch(async () => await DownloadUrl(url));
+            DownloadUrl(input);
+            //Dispatcher.Dispatch(async () => await DownloadUrl(input));
         }
 
-        private async Task DownloadUrl(string url)
+        private void DownloadUrl(string input)
         {
             // validate input
-            var match = Regex.Match(url, INPUT_REGEX, RegexOptions.IgnoreCase);
+            var match = Regex.Match(input, INPUT_REGEX, RegexOptions.IgnoreCase);
             if (!match.Success)
             {
                 Console.WriteLine($"{Tag} input invalid");
@@ -910,7 +911,7 @@ namespace InstaLoaderMaui
                     Bundle bun = new();
                     bun.PutString("input", "load");
                     bun.PutBoolean("input_valid", false);
-                    bun.PutString("input_text", url);
+                    bun.PutString("input_text", input);
                     bun.PutString("app_name", "soundloader");
                     FirebaseAnalytics.GetInstance((MainActivity)Platform.CurrentActivity).LogEvent("input_load", bun);
                 }
@@ -919,39 +920,145 @@ namespace InstaLoaderMaui
                     Console.WriteLine($"{Tag} failed to log event: {er.Message}");
                 }
 #endif
-
                 return;
             }
 
+            // trim to post id
+            if (input.Contains("instagram.com/p/"))
+            {
+                input = input[(input.IndexOf("instagram.com/p/") + 16)..];
+                if (input.Contains('/'))
+                {
+                    input = input[..input.IndexOf('/')];
+                }
+            }
+            else
+            {
+                Console.WriteLine($"{Tag} input is not an instagram post");
+                return;
+            }
+
+            // download post
             try
             {
-                var mediaUrl = await GetInstagramMediaUrlAsync(url);
-                if (string.IsNullOrEmpty(mediaUrl))
+                Downloader.DownloadPost(input, AbsPathDocs);
+
+                /* get media urls
+                var mediaUrls = await GetInstagramMediaUrlsAsync(url);
+                if (mediaUrls == null || mediaUrls.Count == 0)
                 {
-                    StatusLabel.Text = "Could not extract media URL.";
+                    StatusLabel.Text = "Could not extract media URLs.";
                     return;
                 } else
                 {
-                    Console.WriteLine($"{Tag} mediaUrl={mediaUrl}");
+                    for (int i = 0; i < mediaUrls.Count; i++)
+                    {
+                        Console.WriteLine($"{Tag} mediaUrls[{i}]={mediaUrls[i]}");
+                    }
                 }
 
+                // TODO download all media urls
+                var mediaUrl = mediaUrls[0]; // Use the first media URL for download
                 var fileName = Path.GetFileName(new Uri(mediaUrl).LocalPath);
                 var filePath = Path.Combine(AbsPathDocs, fileName);
 
                 using var httpClient = new HttpClient();
                 var bytes = await httpClient.GetByteArrayAsync(mediaUrl);
                 File.WriteAllBytes(filePath, bytes);
+                */
 
-                ScanDownload(filePath);
-
-                StatusLabel.Text = $"Downloaded: {fileName}";
             }
             catch (Exception ex)
             {
                 StatusLabel.Text = $"Error: {ex.Message}";
             }
         }
-        
+
+        // TODO call instaloader
+
+        /*
+         static async Task<List<string>> GetInstagramMediaUrlsAsync(string postUrl)
+        {
+            var mediaUrls = new List<string>();
+            using var httpClient = new HttpClient();
+
+            // Set User-Agent to mimic a desktop browser
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+            );
+
+            var html = await httpClient.GetStringAsync(postUrl);
+
+            // 1. Extract og:image and og:video meta tags
+            var metaRegex = new Regex("<meta property=\"og:(image|video)\" content=\"([^\"]+)\"", RegexOptions.IgnoreCase);
+            foreach (Match match in metaRegex.Matches(html))
+            {
+                var url = match.Groups[2].Value.Replace("&amp;", "&");
+                if (!mediaUrls.Contains(url))
+                    mediaUrls.Add(url);
+            }
+
+            // 2. Extract media URLs from embedded JSON (for carousels/multiple images/videos)
+            var sharedDataMatch = Regex.Match(html, @"<script type=""text/javascript"">window\._sharedData = (.*?);</script>");
+            if (sharedDataMatch.Success)
+            {
+                try
+                {
+                    var json = sharedDataMatch.Groups[1].Value;
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+
+                    // Traverse to media items
+                    var mediaNodes = root
+                        .GetProperty("entry_data")
+                        .GetProperty("PostPage")[0]
+                        .GetProperty("graphql")
+                        .GetProperty("shortcode_media");
+
+                    // Single image/video
+                    if (mediaNodes.TryGetProperty("display_url", out var displayUrl))
+                    {
+                        var url = displayUrl.GetString();
+                        if (!string.IsNullOrEmpty(url) && !mediaUrls.Contains(url))
+                            mediaUrls.Add(url);
+                    }
+                    if (mediaNodes.TryGetProperty("video_url", out var videoUrl))
+                    {
+                        var url = videoUrl.GetString();
+                        if (!string.IsNullOrEmpty(url) && !mediaUrls.Contains(url))
+                            mediaUrls.Add(url);
+                    }
+
+                    // Carousel (multiple media)
+                    if (mediaNodes.TryGetProperty("edge_sidecar_to_children", out var sidecar))
+                    {
+                        foreach (var edge in sidecar.GetProperty("edges").EnumerateArray())
+                        {
+                            var node = edge.GetProperty("node");
+                            if (node.TryGetProperty("display_url", out var dUrl))
+                            {
+                                var url = dUrl.GetString();
+                                if (!string.IsNullOrEmpty(url) && !mediaUrls.Contains(url))
+                                    mediaUrls.Add(url);
+                            }
+                            if (node.TryGetProperty("video_url", out var vUrl))
+                            {
+                                var url = vUrl.GetString();
+                                if (!string.IsNullOrEmpty(url) && !mediaUrls.Contains(url))
+                                    mediaUrls.Add(url);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine($"{Tag} did not find embedded json");
+                }
+            }
+
+            return mediaUrls;
+        }
+
         private async Task<string?> GetInstagramMediaUrlAsync(string postUrl)
         {
             Console.WriteLine($"{Tag} GetInstagramMediaUrlAsync postUrl={postUrl}");
@@ -983,6 +1090,8 @@ namespace InstaLoaderMaui
 
             return dlUrl;
         }
+         */
+
 
         public static IEnumerable<string> Split(string str, int chunkSize)
         {

@@ -30,7 +30,7 @@
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -74,6 +74,12 @@
 		<PackageReference Include="Xamarin.Google.UserMessagingPlatform" Version="3.1.0.2" />
 		<PackageReference Include="Xamarin.Android.Google.BillingClient" Version="7.1.1.2" />
 		<PackageReference Include="Plugin.MauiMTAdmob" Version="2.0.0.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="PostLoaderBinding">
+	    <HintPath>..\..\PostLoaderBinding\PostLoaderBinding\bin\Debug\net9.0-android\PostLoaderBinding.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 
 </Project>

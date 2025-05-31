@@ -6,9 +6,6 @@ using Microsoft.Maui.Handlers;
 using InstaLoaderMaui.Platforms.Android;
 using Android.Util;
 
-
-
-
 #if ANDROID
 using Android.Content;
 using Android.Views.InputMethods;
@@ -1077,17 +1074,6 @@ namespace InstaLoaderMaui
         {
             return Enumerable.Range(0, str.Length / chunkSize)
                 .Select(i => str.Substring(i * chunkSize, chunkSize));
-        }
-
-        public static async Task ScanDownload(string filepath)
-        {
-#if ANDROID
-            // scan media file
-            Console.WriteLine($"{Tag} scanning new media file at: MFilePath={filepath}");
-            Android.Net.Uri uri = Android.Net.Uri.Parse("file://" + filepath);
-            Intent scanFileIntent = new Intent(Intent.ActionMediaScannerScanFile, uri);
-            MainActivity.ActivityCurrent.SendBroadcast(scanFileIntent);
-#endif
         }
 
     }

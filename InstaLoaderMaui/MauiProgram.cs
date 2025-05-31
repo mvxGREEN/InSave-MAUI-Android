@@ -58,7 +58,14 @@ public static class MauiProgram
                     });
                     android.OnDestroy(activity =>
                     {
-                        Console.WriteLine($"{Tag} OnDestroy");
+                        try
+                        {
+                            activity.UnregisterReceiver(MainActivity.MFinishReceiver);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"{Tag} MFinishReceiver already unregistered");
+                        }
                     });
                 });
             });

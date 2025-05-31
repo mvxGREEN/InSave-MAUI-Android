@@ -699,43 +699,38 @@ public class MainActivity : MauiAppCompatActivity, IPurchasesUpdatedListener
             }
 
             // cleanup files
-            Task.Run(async () =>
+            string filepath = MainPage.AbsPathDocs + MainPage.PostId;
+            Java.IO.File docs = new Java.IO.File(MainPage.AbsPathDocs);
+            if (docs.IsDirectory)
             {
-                string filepath = MainPage.AbsPathDocs + MainPage.PostId;
-                Java.IO.File docs = new Java.IO.File(MainPage.AbsPathDocs);
-                if (docs.IsDirectory)
+                Java.IO.File[] allContents = docs.ListFiles();
+                foreach (Java.IO.File file in allContents)
                 {
-                    Java.IO.File[] allContents = docs.ListFiles();
-                    foreach (Java.IO.File file in allContents)
+                    if (file.Name.StartsWith(PostId))
                     {
-                        if (file.Name.StartsWith(PostId))
+                        Console.WriteLine($"{Tag} found instaloader file: file.Name={file.Name}");
+
+                        // delete txt and json.xz files
+                        if (file.Name.EndsWith(".json.xz") || file.Name.EndsWith(".txt"))
                         {
-                            Console.WriteLine($"{Tag} found instaloader file: file.Name={file.Name}");
-                            
-                            // delete txt and json.xz files
-                            if (file.Name.EndsWith(".json.xz") || file.Name.EndsWith(".txt"))
+                            if (file.Delete())
                             {
-                                if (file.Delete())
-                                {
-                                    Console.WriteLine($"{Tag} deleted successfully");
-                                } else
-                                {
-                                    Console.WriteLine($"{Tag} failed to delete");
-                                }
-                            } 
-                            // scan media files
+                                Console.WriteLine($"{Tag} deleted successfully");
+                            }
                             else
                             {
-                                Console.WriteLine($"{Tag} scanning file at: file.AbsolutePath={file.AbsolutePath}");
-                                MainThread.BeginInvokeOnMainThread(() =>
-                                {
-                                    ScanDownload(file.AbsolutePath);
-                                });
+                                Console.WriteLine($"{Tag} failed to delete");
                             }
+                        }
+                        // scan media files
+                        else
+                        {
+                            Console.WriteLine($"{Tag} scanning file at: file.AbsolutePath={file.AbsolutePath}");
+                            //ScanDownload(file.AbsolutePath);
                         }
                     }
                 }
-            });
+            }
 
             // close service and unregister receiver
             ((MainPage)Shell.Current.CurrentPage).Services.Stop();
@@ -747,5 +742,14 @@ public class MainActivity : MauiAppCompatActivity, IPurchasesUpdatedListener
                 ((MainPage)Shell.Current.CurrentPage).ShowFinishUI();
             });
         }
+    }
+
+    private async Task ScanDownload(string filepath)
+    {
+        // scan media file
+        Console.WriteLine($"{Tag} scanning new media file at: MFilePath={filepath}");
+        Android.Net.Uri uri = Android.Net.Uri.Parse("file://" + filepath);
+        Intent scanFileIntent = new Intent(Intent.ActionMediaScannerScanFile, uri);
+        MainActivity.ActivityCurrent.SendBroadcast(scanFileIntent);
     }
 }

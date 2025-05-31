@@ -78,14 +78,12 @@
                         <!-- THUMBNAIL -->
                         <Image x:Name="preview_img"
                             Source="{Binding MThumbnailUrl}"
+                            Background="{StaticResource PointOh}"
                             Aspect="AspectFill"
                             ZIndex="1"
                             Margin="-20"
                             Opacity="0.0"/>
                     </Frame>
-                    <!-- WEBVIEW -->
-                    <WebView x:Name="preview_webview"
-                    IsVisible="False" />
                     <!-- PROGRESS -->
                     <VerticalStackLayout AbsoluteLayout.LayoutBounds="0.5,0.5,1,100"
                         AbsoluteLayout.LayoutFlags="PositionProportional,WidthProportional">

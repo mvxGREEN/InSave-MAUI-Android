@@ -15,16 +15,7 @@ namespace InstaLoaderMaui.Platforms.Android
             //string filePath = instaLoader.DownloadPost(id, path);
             string filePath = instaLoader.DownloadPost(id, path.TrimStart('/').TrimEnd('/'));
 
-            // TODO scan file
-            //ScanDownload(filePath);
-
-            /*
-             * TODO update UI
-            MainThread.InvokeOnMainThreadAsync(() =>
-            {
-                StatusLabel.Text = $"Downloaded!";
-            });
-            */
+            
         }
 
     }

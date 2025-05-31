@@ -763,10 +763,11 @@ namespace InstaLoaderMaui
 
         private async void OnDownloadClicked(object sender, EventArgs e)
         {
-            StatusLabel.Text = "";
+            ShowDownloadingUI();
+
+            // download input
             var input = main_textfield.Text?.Trim();
             DownloadInput(input);
-            //Dispatcher.Dispatch(async () => await DownloadUrl(input));
         }
 
         private void OnTextChanged(object sender, TextChangedEventArgs e)
@@ -922,6 +923,17 @@ namespace InstaLoaderMaui
                 }
 #endif
                 return;
+            }
+
+            // register finish reciever
+            MainActivity ma = (MainActivity)Platform.CurrentActivity;
+            if ((int)Build.VERSION.SdkInt >= 33)
+            {
+                ma.RegisterReceiver(MainActivity.MFinishReceiver, new IntentFilter("69"), ReceiverFlags.Exported);
+            }
+            else
+            {
+                ma.RegisterReceiver(MainActivity.MFinishReceiver, new IntentFilter("69"));
             }
 
             // trim to post id

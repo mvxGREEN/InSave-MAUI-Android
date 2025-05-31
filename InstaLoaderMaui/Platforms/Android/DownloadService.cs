@@ -45,8 +45,12 @@ namespace InstaLoaderMaui.Platforms.Android
 
             if (intent.Action == "START_SERVICE")
             {
-                // start download
-                Downloader.DownloadPost(MainPage.MInstaLoader, MainPage.PostId, MainPage.AbsPathDocs);
+                Task.Run(async () =>
+                {
+                    // start download task
+                    await Downloader.DownloadPost(MainPage.MInstaLoader, MainPage.PostId, MainPage.AbsPathDocs);
+                });
+
             }
             else if (intent.Action == "STOP_SERVICE")
             {

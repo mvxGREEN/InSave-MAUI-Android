@@ -20,10 +20,18 @@ using Android.Net.Wifi.Aware;
 
 namespace InstaLoaderMaui;
 
-[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, LaunchMode = LaunchMode.SingleTop, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
+[Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, Exported = true, LaunchMode = LaunchMode.SingleTop, ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode | ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
+[IntentFilter(new[] { Intent.ActionSend },
+          Categories = new[] {
+              Intent.CategoryDefault
+          },
+          DataMimeType = "*/*")]
+[MetaData(name: "com.google.android.play.billingclient.version", Value = "7.1.1")]
 public class MainActivity : MauiAppCompatActivity, IPurchasesUpdatedListener
 {
     private static string Tag = nameof(MainActivity);
+
+    public static FinishReceiver MFinishReceiver = new();
 
     public BillingClient MBillingClient;
     public BillingFlowParams MBillingFlowParams;
@@ -666,5 +674,78 @@ public class MainActivity : MauiAppCompatActivity, IPurchasesUpdatedListener
                 .Build();
 
         MBillingClient.AcknowledgePurchase(acknowledgePurchaseParams, new AcknowledgePurchaseResponseListener());
+    }
+
+    // BROADCAST RECEIVER
+    [BroadcastReceiver(Enabled = true, Exported = false)]
+    public class FinishReceiver : BroadcastReceiver
+    {
+        string Tag = nameof(FinishReceiver);
+        public override void OnReceive(Context context, Intent intent)
+        {
+            Log.Info(Tag, "OnReceive");
+
+            // log event
+            try
+            {
+                Bundle bundle = new Bundle();
+                bundle.PutString("input", "finish");
+                bundle.PutString("app_name", "spotiflyer");
+                FirebaseAnalytics.GetInstance((MainActivity)Platform.CurrentActivity).LogEvent("input_finish", bundle);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"{Tag} failed to log event");
+            }
+
+            // cleanup files
+            Task.Run(async () =>
+            {
+                string filepath = MainPage.AbsPathDocs + MainPage.PostId;
+                Java.IO.File docs = new Java.IO.File(MainPage.AbsPathDocs);
+                if (docs.IsDirectory)
+                {
+                    Java.IO.File[] allContents = docs.ListFiles();
+                    foreach (Java.IO.File file in allContents)
+                    {
+                        if (file.Name.StartsWith(PostId))
+                        {
+                            Console.WriteLine($"{Tag} found instaloader file: file.Name={file.Name}");
+                            
+                            // delete txt and json.xz files
+                            if (file.Name.EndsWith(".json.xz") || file.Name.EndsWith(".txt"))
+                            {
+                                if (file.Delete())
+                                {
+                                    Console.WriteLine($"{Tag} deleted successfully");
+                                } else
+                                {
+                                    Console.WriteLine($"{Tag} failed to delete");
+                                }
+                            } 
+                            // scan media files
+                            else
+                            {
+                                Console.WriteLine($"{Tag} scanning file at: file.AbsolutePath={file.AbsolutePath}");
+                                MainThread.BeginInvokeOnMainThread(() =>
+                                {
+                                    ScanDownload(file.AbsolutePath);
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+
+            // close service and unregister receiver
+            ((MainPage)Shell.Current.CurrentPage).Services.Stop();
+            context.UnregisterReceiver(this);
+
+            // update ui
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                ((MainPage)Shell.Current.CurrentPage).ShowFinishUI();
+            });
+        }
     }
 }

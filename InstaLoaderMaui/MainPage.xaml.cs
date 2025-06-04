@@ -40,6 +40,7 @@ namespace InstaLoaderMaui
         public static string IgId = "";
         public static string MCookies = "";
         public static bool MIsAlreadyLoading = false;
+        public static List<string> MDownloadUrls = new List<string>();
 
         public static string AdmobIdApp = "ca-app-pub-7417392682402637~9405504691";
         public static string admobIdInterTest = "ca-app-pub-3940256099942544/1033173712";
@@ -904,7 +905,7 @@ namespace InstaLoaderMaui
             }
 
             // get id (or username)
-            IgId = input[..input.IndexOf('/')];
+            IgId = input[..input.LastIndexOf('/')];
             if (IgId.Contains('/'))
             {
                 IgId = IgId[(IgId.LastIndexOf('/') + 1)..];
@@ -1064,6 +1065,11 @@ namespace InstaLoaderMaui
         {
             private static readonly string Tag = nameof(MWebViewClient);
 
+            public MWebViewClient()
+            {
+                
+            }
+
             public static List<string> ExtractUrlsFromHtml(string html)
             {
                 if (string.IsNullOrEmpty(html))
@@ -1071,6 +1077,12 @@ namespace InstaLoaderMaui
 
                 // Regex to match URLs in href/src attributes and plain text
                 var urlPattern = @"(?i)\b((?:https?|ftp):\/\/[^\s""'<>]+)";
+                
+
+                if (html.Contains("https:\\\\/\\\\/")) { 
+                    html = html.Replace("https:\\\\/\\\\/", "https://");
+                }
+
                 var matches = Regex.Matches(html, urlPattern);
 
                 var urls = new List<string>();
@@ -1078,11 +1090,19 @@ namespace InstaLoaderMaui
                 {
                     if (match.Success)
                     {
-                        if (match.Value.Contains(".jpg?") || match.Value.Contains(".mp4?"))
-                        urls.Add(match.Value);
+                        // TODO handle videos, non-JPGs
+                        if ((match.Value.Contains(".jpg?se") && match.Value.Contains("720x"))
+                            || match.Value.Contains(".mp4?"))
+                        {
+                            var url = match.Value.Replace("\\\\", "");
+                            url = url.Replace("&amp;", "&");
+                            urls.Add(url);
+                        }
+                        
                     }
                         
                 }
+                Console.WriteLine($"{Tag} extracted urls count: {urls.Count}");
                 return urls;
             }
 
@@ -1114,14 +1134,17 @@ namespace InstaLoaderMaui
                             Console.WriteLine($"{Tag} {v}");
                         }
 
-                        // TODO extract download urls
-                        List<String> urls = ExtractUrlsFromHtml(res);
-                        foreach (string url in urls)
+                        // extract download urls
+                        List<String> MDownloadUrls = ExtractUrlsFromHtml(res);
+                        foreach (string url in MDownloadUrls)
                         {
                             Console.WriteLine($"{Tag} found content url: {url}");
                         }
 
                         // update ui
+                        ((MainPage)Shell.Current.CurrentPage).MThumbnailUrl = MDownloadUrls.FirstOrDefault();
+                        //((MainPage)Shell.Current.CurrentPage).MTitle = 
+
                         ((IWebViewHandler)pmv.Handler).PlatformView.SetWebViewClient(null);
                         pmv.IsVisible = false;
                         pmv.IsEnabled = false;

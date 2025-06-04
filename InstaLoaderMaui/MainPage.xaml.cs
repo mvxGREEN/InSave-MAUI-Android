@@ -3,10 +3,10 @@ using UraniumUI.Material.Controls;
 using MPowerKit.ProgressRing;
 using Firebase;
 using Microsoft.Maui.Handlers;
-using InstaLoaderMaui.Platforms.Android;
-using Android.Util;
 using Android.Webkit;
-using Android.Nfc;
+using Android.Text;
+using Android.Gms.Common.Util.Wrappers;
+
 
 
 
@@ -36,8 +36,10 @@ namespace InstaLoaderMaui
         public static InstaLoader MInstaLoader;
         public static string AbsPathDocs = "";
         public static string AbsPathDocsTemp = "";
+        public static string MInput = "";
         public static string IgId = "";
         public static string MCookies = "";
+        public static bool MIsAlreadyLoading = false;
 
         public static string AdmobIdApp = "ca-app-pub-7417392682402637~9405504691";
         public static string admobIdInterTest = "ca-app-pub-3940256099942544/1033173712";
@@ -317,6 +319,7 @@ namespace InstaLoaderMaui
             Console.WriteLine($"{Tag} ResetVars");
             MainPage mp = (MainPage)Shell.Current.CurrentPage;
             MainPage.MFailedShowInter = false;
+            MIsAlreadyLoading = false;
             mp.MThumbnailUrl = "";
             mp.MTitle = "";
             mp.MArtist = "";
@@ -780,7 +783,7 @@ namespace InstaLoaderMaui
             DownloadPost(input);
         }
 
-        private void OnTextChanged(object sender, TextChangedEventArgs e)
+        private void OnTextChanged(object sender, Microsoft.Maui.Controls.TextChangedEventArgs e)
         {
             Console.WriteLine($"{Tag} OnTextChanged");
 
@@ -882,6 +885,7 @@ namespace InstaLoaderMaui
             {
                 domain = domain[..domain.IndexOf('/')];
             }
+            MInput = input;
 
             // log event
             try
@@ -1011,17 +1015,17 @@ namespace InstaLoaderMaui
             Services.Start();
         }
 
-        private async Task<string?> GetPostThumbnailUrl(string postUrl)
+        private async Task<string?> GetPostThumbnailUrl(string url)
         {
-            Console.WriteLine($"{Tag} GetThumbnailUrl postUrl={postUrl}");
+            Console.WriteLine($"{Tag} GetThumbnailUrl postUrl={url}");
             using var httpClient = new HttpClient();
-            var html = await httpClient.GetStringAsync(postUrl);
+            var html = await httpClient.GetStringAsync(url);
 
             // print html
             IEnumerable<string> htmlChunks = Split(html, 3500);
+            Console.WriteLine($"{Tag} MAIN HTML:");
             foreach (string v in htmlChunks)
             {
-                Console.WriteLine($"{Tag} HTML:");
                 Console.WriteLine($"{Tag} {v}");
             }
 
@@ -1060,6 +1064,28 @@ namespace InstaLoaderMaui
         {
             private static readonly string Tag = nameof(MWebViewClient);
 
+            public static List<string> ExtractUrlsFromHtml(string html)
+            {
+                if (string.IsNullOrEmpty(html))
+                    return new List<string>();
+
+                // Regex to match URLs in href/src attributes and plain text
+                var urlPattern = @"(?i)\b((?:https?|ftp):\/\/[^\s""'<>]+)";
+                var matches = Regex.Matches(html, urlPattern);
+
+                var urls = new List<string>();
+                foreach (Match match in matches)
+                {
+                    if (match.Success)
+                    {
+                        if (match.Value.Contains(".jpg?") || match.Value.Contains(".mp4?"))
+                        urls.Add(match.Value);
+                    }
+                        
+                }
+                return urls;
+            }
+
             public override void OnPageFinished(Android.Webkit.WebView? view, string? url)
             {
                 Console.WriteLine($"{Tag} OnPageFinished url={url}");
@@ -1067,6 +1093,44 @@ namespace InstaLoaderMaui
                 // get cookies
                 MCookies = CookieManager.Instance.GetCookie(url);
                 Console.WriteLine($"{Tag} MCookies={MCookies}");
+
+                if (!url.Contains("instagram.com/?"))
+                {
+                    Console.WriteLine($"{Tag} finished loading private page url={url} MIsAlreadyLoading={MIsAlreadyLoading}");
+
+                    // remove self from webview when finished
+                    MainThread.BeginInvokeOnMainThread(async () =>
+                    {
+                        // get html via javascript
+                        var pmv = (Microsoft.Maui.Controls.WebView)((MainPage)Shell.Current.CurrentPage).FindByName("preview_webview");
+                        var res = await ((Microsoft.Maui.Controls.WebView)pmv).EvaluateJavaScriptAsync("(function() { return ('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>'); })();");
+
+                        // print html
+                        IEnumerable<string> htmlChunks = Split(res, 3500);
+
+                        Console.WriteLine($"{Tag} JS HTML:");
+                        foreach (string v in htmlChunks)
+                        {
+                            Console.WriteLine($"{Tag} {v}");
+                        }
+
+                        // TODO extract download urls
+                        List<String> urls = ExtractUrlsFromHtml(res);
+                        foreach (string url in urls)
+                        {
+                            Console.WriteLine($"{Tag} found content url: {url}");
+                        }
+
+                        // update ui
+                        ((IWebViewHandler)pmv.Handler).PlatformView.SetWebViewClient(null);
+                        pmv.IsVisible = false;
+                        pmv.IsEnabled = false;
+                        ((MainPage)Shell.Current.CurrentPage).ShowPreviewUI();
+                    });
+                    
+
+
+                }
 
                 base.OnPageFinished(view, url);
             }
@@ -1083,15 +1147,55 @@ namespace InstaLoaderMaui
                 Console.WriteLine($"{Tag} ShouldInterceptRequest request url={url}");
                 MainPage mp = (MainPage)Shell.Current.CurrentPage;
 
-                // TODO handle successful login
-
-                // TODO hide webview
-
-                // remove self from webview when finished
-                /*MainThread.BeginInvokeOnMainThread(() =>
+                // load private page
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    ((IWebViewHandler)mp.pwv.Handler).PlatformView.SetWebViewClient(null);
+                    // get sessionid cookie
+                    if (url.Contains("graphql/query")
+                    && MCookies.Contains("sessionid=")
+                    && !MIsAlreadyLoading)
+                    {
+                        Console.WriteLine($"{Tag} loading original url MInput={MInput}");
+                        MIsAlreadyLoading = true;
+                        view.LoadUrl(MInput);
+                    }
                 });
+                
+
+                /*
+                try
+                {
+                    using (var httpClient = new HttpClient())
+                    {
+                        // You might need to handle request methods and headers appropriately
+                        var httpRequest = new HttpRequestMessage(new HttpMethod(request.Method), request.Url.ToString());
+                        foreach (var header in request.RequestHeaders)
+                        {
+                            httpRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                        }
+
+                        var httpResponse = httpClient.SendAsync(httpRequest).Result;
+
+                        // Get response headers (status code, content type, etc.)
+                        var responseHeaders = httpResponse.Headers;
+                        var contentStream = httpResponse.Content.ReadAsStreamAsync().Result;
+
+                        // Create and return the WebResourceResponse
+                        return new WebResourceResponse(
+                            httpResponse.Content.Headers.ContentType?.ToString(),
+                            httpResponse.Content.Headers.ContentEncoding.FirstOrDefault(), // Handle potential multiple encodings
+                            int.Parse(httpResponse.StatusCode.ToString()), // Status code
+                            httpResponse.ReasonPhrase, // Reason phrase
+                            responseHeaders.ToDictionary(h => h.Key, h => h.Value.First()), // Response headers
+                            contentStream
+                        );
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Handle exceptions
+                    return null;
+                }
                 */
 
                 return base.ShouldInterceptRequest(view, request);

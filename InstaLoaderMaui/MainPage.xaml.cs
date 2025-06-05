@@ -889,7 +889,7 @@ namespace InstaLoaderMaui
                     bun.PutString("input", "load");
                     bun.PutBoolean("input_valid", false);
                     bun.PutString("input_text", input);
-                    bun.PutString("app_name", "soundloader");
+                    bun.PutString("app_name", "instaloader");
                     FirebaseAnalytics.GetInstance((MainActivity)Platform.CurrentActivity).LogEvent("input_load", bun);
                 }
                 catch (Exception e)
@@ -910,6 +910,7 @@ namespace InstaLoaderMaui
                 domain = domain[..domain.IndexOf('/')];
             }
             MInput = input;
+            Console.WriteLine($"{Tag} MInput={MInput}");
 
             // log event
             try
@@ -963,12 +964,14 @@ namespace InstaLoaderMaui
 
             }
 
+
             // scrape metadata
             try {
                 Task.Run(async () =>
                 {
                     // get thumbnail
                     MThumbnailUrl = await GetPostThumbnailUrl(input);
+                    Console.WriteLine($"{Tag} gotten thumbnail MThumbnailUrl={MThumbnailUrl}");
 
                     // check if requires login
                     if (MThumbnailUrl == null || MThumbnailUrl.Length == 0)
@@ -980,7 +983,7 @@ namespace InstaLoaderMaui
                         MainThread.BeginInvokeOnMainThread(() =>
                         {
                             pwv = (Microsoft.Maui.Controls.WebView)FindByName("preview_webview");
-                            pwv.IsVisible = true;
+                            //pwv.IsVisible = true;
                             pwv.IsEnabled = true;
 
                             ((IWebViewHandler)pwv.Handler).PlatformView
@@ -999,6 +1002,7 @@ namespace InstaLoaderMaui
                     }
                     else
                     {
+                        Console.WriteLine($"{Tag} gotten post MThumbnailUrl={MThumbnailUrl}");
                         // update ui
                         MainThread.BeginInvokeOnMainThread(() =>
                         {
@@ -1082,10 +1086,8 @@ namespace InstaLoaderMaui
             {
                 Console.WriteLine($"{Tag} empty og:image -- not logged in");
 
-                // show webview
-                var pmv = (Microsoft.Maui.Controls.WebView)FindByName("preview_webview");
-                pmv.IsVisible = true;
-
+                
+                return "";
             }
 
             Console.WriteLine($"{Tag} found thumbnail url: turl={turl}");
@@ -1125,23 +1127,33 @@ namespace InstaLoaderMaui
                 }
 
                 var matches = Regex.Matches(html, urlPattern);
-
+                Console.WriteLine($"{Tag} matches={matches.Count}");
                 var urls = new List<string>();
                 foreach (Match match in matches)
                 {
                     if (match.Success)
                     {
                         // TODO handle videos, non-JPGs
-                        if ((match.Value.Contains(".jpg?se") && !match.Value.Contains("320x"))
-                            || match.Value.Contains(".mp4?"))
+                        if (match.Value.Contains(".jpg?"))
                         {
-                            var url = match.Value.Replace("\\\\", "");
+                            // format
+                            var url = match.Value;
+                            
                             url = url.Replace("&amp;", "&");
-                            urls.Add(url);
+                            url = url.Replace("\u0025", "%");
+                            url = url.Replace("\u0026", "&");
+                            url = url.Replace("\\\\", "");
+
+                            // prevent duplicates
+                            if (!urls.Contains(url) 
+                                && !url.Contains("320x320") 
+                                && !url.Contains("640x640")
+                                && !url.Contains("150x150"))
+                            {
+                                urls.Add(url);
+                            }
                         }
-                        
-                    }
-                        
+                    }       
                 }
                 Console.WriteLine($"{Tag} extracted urls count: {urls.Count}");
                 return urls;
@@ -1156,7 +1168,17 @@ namespace InstaLoaderMaui
                 Preferences.Default.Set("COOKIES", MCookies);
                 Console.WriteLine($"{Tag} MCookies={MCookies}");
 
-                if (!url.Contains("instagram.com/?"))
+                if (url.Contains("instagram.com/accounts/login") || url.Contains(MInput))
+                {
+                    MainThread.BeginInvokeOnMainThread(async () =>
+                    {
+                        // get html via javascript
+                        var pmv = (Microsoft.Maui.Controls.WebView)((MainPage)Shell.Current.CurrentPage).FindByName("preview_webview");
+                        pmv.IsVisible = true;
+                    });
+                }
+
+                if (!url.Contains("instagram.com/accounts/login") && !url.Contains("instagram.com/?"))
                 {
                     Console.WriteLine($"{Tag} finished loading private page url={url} MIsAlreadyLoading={MIsAlreadyLoading}");
 

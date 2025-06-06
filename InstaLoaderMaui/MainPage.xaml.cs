@@ -6,7 +6,6 @@ using Microsoft.Maui.Handlers;
 using Android.Webkit;
 using Android.App;
 
-
 #if ANDROID
 using Android.Content;
 using Android.Views.InputMethods;
@@ -453,15 +452,6 @@ namespace InstaLoaderMaui
         {
             Console.WriteLine($"{Tag}: ShowPreviewUI MThumbnailUrl={MThumbnailUrl}");
 
-            /* destroy webview
-            if (null != pwv)
-            {
-                ((IWebViewHandler)pwv.Handler).PlatformView.SetWebViewClient(null);
-                ((IWebViewHandler)pwv.Handler).PlatformView.Destroy();
-                pwv = null;
-            }
-            */
-
             // hide finish button
             ButtonView finishBtn = (ButtonView)FindByName("finish_btn");
             finishBtn.Opacity = 0.0;
@@ -481,8 +471,6 @@ namespace InstaLoaderMaui
 
             // increase thumbnail opacity
             ((Image)FindByName("preview_img")).Opacity = 1.0;
-
-
         }
 
         public async Task ShowDownloadingUI()
@@ -799,7 +787,7 @@ namespace InstaLoaderMaui
                     // download private media
                     for (int i = 0; i < MDownloadUrls.Count; i++)
                     {
-                        Task.Delay(1000).Wait();
+                        Task.Delay(433).Wait();
                         await DownloadUrl(MDownloadUrls[i], i);
                     }
                 }
@@ -933,12 +921,22 @@ namespace InstaLoaderMaui
                 Console.WriteLine($"{Tag} failed to log event: {e.Message}");
             }
 
-            // get id (or username)
-            IgId = input[..input.LastIndexOf('/')];
-            if (IgId.Contains('/'))
+            // get id
+            if (input.Contains(".com/p/"))
             {
-                IgId = IgId[(IgId.LastIndexOf('/') + 1)..];
-                
+                // post
+                IgId = input[..input.LastIndexOf('/')];
+                if (IgId.Contains('/'))
+                {
+                    IgId = IgId[(IgId.LastIndexOf('/') + 1)..];
+
+                }
+            } else if (input[input.LastIndexOf('/')..].Contains('?'))
+            {
+                IgId = input[(input.LastIndexOf('/')+1)..input.LastIndexOf('?')];
+            } else
+            {
+                IgId = input[(input.LastIndexOf('/') + 1)..];
             }
             MTitle = IgId;
             Console.WriteLine($"{Tag} input={input} IgId={IgId}");
@@ -978,32 +976,34 @@ namespace InstaLoaderMaui
                     MThumbnailUrl = await GetPostThumbnailUrl(input);
                     Console.WriteLine($"{Tag} gotten thumbnail MThumbnailUrl={MThumbnailUrl}");
 
-                    // check if requires login
+                    Console.WriteLine($"{Tag} post is private or not found");
+                    MMessageToast = "Post not found or private.";
+
+                    // show login page in webview
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        pwv = (Microsoft.Maui.Controls.WebView)FindByName("preview_webview");
+                        //pwv.IsVisible = true;
+                        pwv.IsEnabled = true;
+
+                        ((IWebViewHandler)pwv.Handler).PlatformView
+                            .SetWebViewClient(new MWebViewClient());
+
+                        //((IWebViewHandler)pwv.Handler).PlatformView.Settings.UserAgentString =
+                        //        UA_DESKTOP_CHROME;
+
+                        ((IWebViewHandler)pwv.Handler).PlatformView.Post(() =>
+                        {
+                            ((IWebViewHandler)pwv.Handler).PlatformView
+                            .LoadUrl("https://www.instagram.com/accounts/login/?hl=en");
+                            // alt: https://www.instagram.com/?flo=true
+                        });
+                    });
+
+                    /* check if requires login
                     if (MThumbnailUrl == null || MThumbnailUrl.Length == 0)
                     {
-                        Console.WriteLine($"{Tag} post is private or not found");
-                        MMessageToast = "Post not found or private.";
-
-                        // show login page in webview
-                        MainThread.BeginInvokeOnMainThread(() =>
-                        {
-                            pwv = (Microsoft.Maui.Controls.WebView)FindByName("preview_webview");
-                            //pwv.IsVisible = true;
-                            pwv.IsEnabled = true;
-
-                            ((IWebViewHandler)pwv.Handler).PlatformView
-                                .SetWebViewClient(new MWebViewClient());
-
-                            //((IWebViewHandler)pwv.Handler).PlatformView.Settings.UserAgentString =
-                            //        UA_DESKTOP_CHROME;
-
-                            ((IWebViewHandler)pwv.Handler).PlatformView.Post(() =>
-                            {
-                                ((IWebViewHandler)pwv.Handler).PlatformView
-                                .LoadUrl("https://www.instagram.com/accounts/login/?hl=en");
-                                // alt: https://www.instagram.com/?flo=true
-                            });
-                        });
+                        
                     }
                     else
                     {
@@ -1014,7 +1014,7 @@ namespace InstaLoaderMaui
                             ShowPreviewUI();
                         });
                     }
-
+                    */
                 });
             }
             catch (Exception e)
@@ -1079,7 +1079,7 @@ namespace InstaLoaderMaui
             if (imgMatch.Success)
             {
                 Console.WriteLine($"{Tag} found thumbnail");
-                turl = imgMatch.Groups[0].Value.ToString();
+                turl = imgMatch.Groups[1].Value.ToString();
             }
                 
 
@@ -1120,7 +1120,14 @@ namespace InstaLoaderMaui
                     Console.WriteLine("html is empty!");
                     return new List<string>();
                 }
-                    
+                 
+                if (html.Contains(".mp4?"))
+                {
+                    Console.WriteLine($"{Tag} html contains \".mp4?\"");
+                } else
+                {
+                    Console.WriteLine($"{Tag} html does not contain \".mp4?\"");
+                }
 
                 // Regex to match URLs in href/src attributes and plain text
                 var urlPattern = @"(?i)\b((?:https?|ftp):\/\/[^\s""'<>]+)";
@@ -1179,6 +1186,13 @@ namespace InstaLoaderMaui
                 Preferences.Default.Set("COOKIES", MCookies);
                 Console.WriteLine($"{Tag} MCookies={MCookies}");
 
+                if (url.Contains(".com/s/") || url.Contains(".com/stories/"))
+                {
+                    // show webview if story
+                    var pwv = (Microsoft.Maui.Controls.WebView)((MainPage)Shell.Current.CurrentPage).FindByName("preview_webview");
+                    pwv.IsVisible = true;
+                }
+
                 if (url.Contains("instagram.com/accounts/login") || url.Contains(MInput))
                 {
                     MainThread.BeginInvokeOnMainThread(async () =>
@@ -1220,7 +1234,7 @@ namespace InstaLoaderMaui
                         ((MainPage)Shell.Current.CurrentPage).MThumbnailUrl = MDownloadUrls.FirstOrDefault();
                         //((MainPage)Shell.Current.CurrentPage).MTitle = 
 
-                        ((IWebViewHandler)pmv.Handler).PlatformView.SetWebViewClient(null);
+                        //((IWebViewHandler)pmv.Handler).PlatformView.SetWebViewClient(null);
                         pmv.IsVisible = false;
                         pmv.IsEnabled = false;
                         ((MainPage)Shell.Current.CurrentPage).ShowPreviewUI();

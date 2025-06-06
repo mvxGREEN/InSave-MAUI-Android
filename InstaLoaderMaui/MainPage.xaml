@@ -86,11 +86,11 @@
                                 Margin="-20"
                                 Opacity="0.0"/>
                             <!-- WEBVIEW -->
-                            <ScrollView HorizontalScrollBarVisibility="Never"
-                                        AbsoluteLayout.LayoutBounds="0,0,1,360"
-                                        AbsoluteLayout.LayoutFlags="PositionProportional,WidthProportional">
+                            <ScrollView HorizontalScrollBarVisibility="Never">
                                 <Grid>
                                     <WebView x:Name="preview_webview"
+                                        AbsoluteLayout.LayoutBounds="0,0,1,360"
+                                        AbsoluteLayout.LayoutFlags="PositionProportional,WidthProportional"
                                         IsVisible="False"
                                         IsEnabled="False"/>
                                 </Grid>

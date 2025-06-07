@@ -976,7 +976,7 @@ namespace InstaLoaderMaui
                 Task.Run(async () =>
                 {
                     // get thumbnail
-                    MThumbnailUrl = await GetPostThumbnailUrl(input);
+                    MThumbnailUrl = await ExtractThumbnailUrl(input);
                     Console.WriteLine($"{Tag} gotten thumbnail MThumbnailUrl={MThumbnailUrl}");
 
                     Console.WriteLine($"{Tag} post is private or not found");
@@ -987,21 +987,42 @@ namespace InstaLoaderMaui
                     {
                         // init webview
                         pwv = (Microsoft.Maui.Controls.WebView)FindByName("preview_webview");
-                        //pwv.IsVisible = true;
                         pwv.IsEnabled = true;
-
                         ((IWebViewHandler)pwv.Handler).PlatformView
                             .SetWebViewClient(new MWebViewClient());
-                        //((IWebViewHandler)pwv.Handler).PlatformView.Settings.UserAgentString = UA_MOBILE_CHROME;
                         
-
-
-                        ((IWebViewHandler)pwv.Handler).PlatformView.Post(() =>
+                        // check for session id
+                        if (MCookies.Contains("sessionid="))
                         {
-                            ((IWebViewHandler)pwv.Handler).PlatformView
-                            .LoadUrl("https://www.instagram.com/accounts/login/?hl=en");
-                            // alt: https://www.instagram.com/?flo=true
-                        });
+                            Console.WriteLine($"{Tag} already logged in! MCookies={MCookies}");
+
+                            // set webview cookies
+                            //CookieManager.Instance.SetCookie(MInput, MCookies);
+                            
+                            // load media page
+                            ((IWebViewHandler)pwv.Handler).PlatformView.Post(() =>
+                            {
+                                ((IWebViewHandler)pwv.Handler).PlatformView
+                                .LoadUrl(MInput);
+                                // alt: https://www.instagram.com/?flo=true
+                            });
+                        } else
+                        {
+                            Console.WriteLine($"{Tag} not logged in! MCookies={MCookies}");
+
+                            // show webview
+                            pwv.IsVisible = true;
+
+                            // load login page
+                            ((IWebViewHandler)pwv.Handler).PlatformView.Post(() =>
+                            {
+                                ((IWebViewHandler)pwv.Handler).PlatformView
+                                .LoadUrl("https://www.instagram.com/accounts/login/?hl=en");
+                                // alt: https://www.instagram.com/?flo=true
+                            });
+                        }
+
+                        
                     });
 
                     /* check if requires login
@@ -1053,7 +1074,7 @@ namespace InstaLoaderMaui
         
         private void DownloadProfile(string postUrl)
         {
-            // TODO download profile if gold
+            // todo 
         }
 
         private void DownloadPost(string postUrl)
@@ -1063,11 +1084,13 @@ namespace InstaLoaderMaui
             Services.Start();
         }
 
-        private async Task<string?> GetPostThumbnailUrl(string url)
+        private async Task<string?> ExtractThumbnailUrl(string inputUrl)
         {
-            Console.WriteLine($"{Tag} GetThumbnailUrl postUrl={url}");
+            Console.WriteLine($"{Tag} ExtractThumbnailUrl url={inputUrl}");
+            
+            // get html
             using var httpClient = new HttpClient();
-            var html = await httpClient.GetStringAsync(url);
+            var html = await httpClient.GetStringAsync(inputUrl);
 
             // print html
             IEnumerable<string> htmlChunks = Split(html, 3500);
@@ -1077,29 +1100,21 @@ namespace InstaLoaderMaui
                 Console.WriteLine($"{Tag} {v}");
             }
 
-            // get url from og:image
-            string turl = "";
+            // extract content from og:image
+            string thumbUrl = "";
             var imgMatch = Regex.Match(html, "<meta property=\"og:image\" content=\"([^\"]+)\"");
             if (imgMatch.Success)
             {
                 Console.WriteLine($"{Tag} found thumbnail");
-                turl = imgMatch.Groups[1].Value.ToString();
-            }
-                
-
-            // fix url 
-            if (turl.Contains("&amp;"))
-                turl = turl.Replace("&amp;", "&");
-
-            // return if empty (not logged in)
-            if (turl.Length == 0)
-            {
-                Console.WriteLine($"{Tag} empty og:image -- not logged in");
-                return "";
+                thumbUrl = imgMatch.Groups[1].Value.ToString();
             }
 
-            Console.WriteLine($"{Tag} found thumbnail url: turl={turl}");
-            return turl;
+            // format url 
+            if (thumbUrl.Contains("&amp;"))
+                thumbUrl = thumbUrl.Replace("&amp;", "&");
+
+            Console.WriteLine($"{Tag} found thumbUrl={thumbUrl}");
+            return thumbUrl;
         }
 
         public static IEnumerable<string> Split(string str, int chunkSize)
@@ -1119,30 +1134,15 @@ namespace InstaLoaderMaui
 
             public static List<string> ExtractUrlsFromHtml(string html)
             {
+                Console.WriteLine($"{Tag} ExctractUrlsFromHtml");
                 if (string.IsNullOrEmpty(html))
                 {
                     Console.WriteLine("html is empty!");
                     return new List<string>();
                 }
-                 
-                if (html.Contains(".mp4?"))
-                {
-                    Console.WriteLine($"{Tag} html contains \".mp4?\"");
-                } else
-                {
-                    Console.WriteLine($"{Tag} html does not contain \".mp4?\"");
-                }
 
-                if (html.Contains("_e35_tt6"))
-                {
-                    Console.WriteLine($"{Tag} html contains \"_e35_tt6\"");
-                } else
-                {
-                    Console.WriteLine($"{Tag} html does not contain \"_e35_tt6\"");
-                }
-
-                    // Regex to match URLs in href/src attributes and plain text
-                    var urlPattern = @"(?i)\b((?:https?|ftp):\/\/[^\s""'<>]+)";
+                // Regex to match URLs in href/src attributes and plain text
+                var urlPattern = @"(?i)\b((?:https?|ftp):\/\/[^\s""'<>]+)";
                 
 
                 if (html.Contains("https:\\\\/\\\\/")) { 
@@ -1161,30 +1161,30 @@ namespace InstaLoaderMaui
                 {
                     if (match.Success)
                     {
-                        // TODO handle videos, non-JPGs
+                        // get image and video URLs
                         if (match.Value.Contains(".jpg?") || match.Value.Contains(".mp4?"))
                         {
-                            // format
+                            // format url
                             var url = match.Value;
                             url = url.Replace("\\%", "%");
-                            url = url.Replace("&amp;", "&");
                             url = url.Replace("\\u0025", "%");
                             url = url.Replace("\\u0026", "&");
                             url = url.Replace("\\\\", "");
                             url = url.Replace("&amp;", "&");
-                            // trim trailing slash
                             if (url.Contains('\\'))
                             {
                                 url = url.Replace("\\", "");
                             }
 
-                            // filter duplicates & unwanted resolutions
-                            if (!urls.Contains(url) 
-                                && !url.Contains("320x320") 
+                            // filter out low resolutions and duplicates
+                            if (!urls.Contains(url)
+                                && !url.Contains("1080x1080")
+                                && !url.Contains("720x720")
                                 && !url.Contains("640x640")
-                                && !url.Contains("150x150")
                                 && !url.Contains("480x480")
+                                && !url.Contains("320x320")
                                 && !url.Contains("240x240")
+                                && !url.Contains("150x150")
                                 && !url.Contains(".jpg?_nc_ht")
                                 && !url.Contains("BaseURL"))
                             {
@@ -1210,12 +1210,14 @@ namespace InstaLoaderMaui
                 CookieManager.Instance.SetCookie("https://www.instagram.com/?hl=en", "wd=1680x881");
                 CookieManager.Instance.SetCookie(MInput, "wd=1680x881");
 
+                /*
+                 // show webview if story
                 if (url.Contains(".com/s/") || url.Contains(".com/stories/"))
                 {
-                    // show webview if story
                     var pwv = (Microsoft.Maui.Controls.WebView)((MainPage)Shell.Current.CurrentPage).FindByName("preview_webview");
                     pwv.IsVisible = true;
                 }
+                 */
 
                 if (url.Contains("instagram.com/accounts/login") || url.Contains(MInput))
                 {
@@ -1259,7 +1261,7 @@ namespace InstaLoaderMaui
                         //((MainPage)Shell.Current.CurrentPage).MTitle = 
 
                         
-                        //((IWebViewHandler)pmv.Handler).PlatformView.SetWebViewClient(null);
+                        ((IWebViewHandler)pmv.Handler).PlatformView.SetWebViewClient(null);
                         pmv.IsVisible = false;
                         pmv.IsEnabled = false;
                         ((MainPage)Shell.Current.CurrentPage).ShowPreviewUI();
@@ -1272,70 +1274,30 @@ namespace InstaLoaderMaui
 
             public override bool ShouldOverrideUrlLoading(Android.Webkit.WebView? view, string? url)
             {
-                Console.WriteLine($"{Tag} ShouldOverrideUrlLoading url={url}");
                 return false;
             }
 
             public override WebResourceResponse? ShouldInterceptRequest(global::Android.Webkit.WebView? view, IWebResourceRequest? request)
             {
-                string url = request.Url.ToString();
-                Console.WriteLine($"{Tag} ShouldInterceptRequest request url={url}");
-                MainPage mp = (MainPage)Shell.Current.CurrentPage;
+                Console.WriteLine($"{Tag} ShouldInterceptRequest request url={request.Url.ToString()}");
 
-                // load private page
-                MainThread.BeginInvokeOnMainThread(() =>
+                // check if logged in, or if already loading media page
+                if (request.Url.ToString().Contains("graphql/query")
+                && MCookies.Contains("sessionid=")
+                && !MIsAlreadyLoading)
                 {
-                    // get sessionid cookie
-                    if (url.Contains("graphql/query")
-                    && MCookies.Contains("sessionid=")
-                    && !MIsAlreadyLoading)
+                    // load media page
+                    MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        Console.WriteLine($"{Tag} loading original url MInput={MInput}");
+                        Console.WriteLine($"{Tag} loading MInput={MInput}");
                         MIsAlreadyLoading = true;
                         view.Settings.CacheMode = CacheModes.NoCache;
                         view.Settings.UseWideViewPort = true;
-                        view.Settings.LoadWithOverviewMode = true;
+                        //view.Settings.LoadWithOverviewMode = true;
                         view.Settings.JavaScriptEnabled = true;
                         view.LoadUrl(MInput);
-                    }
-                });
-                
-
-                /*
-                try
-                {
-                    using (var httpClient = new HttpClient())
-                    {
-                        // You might need to handle request methods and headers appropriately
-                        var httpRequest = new HttpRequestMessage(new HttpMethod(request.Method), request.Url.ToString());
-                        foreach (var header in request.RequestHeaders)
-                        {
-                            httpRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
-                        }
-
-                        var httpResponse = httpClient.SendAsync(httpRequest).Result;
-
-                        // Get response headers (status code, content type, etc.)
-                        var responseHeaders = httpResponse.Headers;
-                        var contentStream = httpResponse.Content.ReadAsStreamAsync().Result;
-
-                        // Create and return the WebResourceResponse
-                        return new WebResourceResponse(
-                            httpResponse.Content.Headers.ContentType?.ToString(),
-                            httpResponse.Content.Headers.ContentEncoding.FirstOrDefault(), // Handle potential multiple encodings
-                            int.Parse(httpResponse.StatusCode.ToString()), // Status code
-                            httpResponse.ReasonPhrase, // Reason phrase
-                            responseHeaders.ToDictionary(h => h.Key, h => h.Value.First()), // Response headers
-                            contentStream
-                        );
-                    }
+                    });
                 }
-                catch (Exception ex)
-                {
-                    // Handle exceptions
-                    return null;
-                }
-                */
 
                 return base.ShouldInterceptRequest(view, request);
             }

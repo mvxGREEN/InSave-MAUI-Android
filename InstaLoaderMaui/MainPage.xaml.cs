@@ -5,9 +5,6 @@ using Firebase;
 using Microsoft.Maui.Handlers;
 using Android.Webkit;
 using Android.App;
-using Android.Util;
-
-using Plugin.MauiMTAdmob;
 
 using Android.Content;
 using Android.Views.InputMethods;
@@ -23,11 +20,12 @@ namespace InstaLoaderMaui
 
         public Microsoft.Maui.Controls.WebView pwv;
 
-        private uint ANIM_LENGTH = 400;
+        private uint ANIM_LENGTH = 333;
         private readonly string INPUT_REGEX = "^$|(?:instagram\\.com\\/)";
         public static readonly string UA_DESKTOP_CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
            UA_DESKTOP_OPERA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 OPR/119.0.0.0",
             UA_MOBILE_CHROME = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Mobile Safari/537.36";
+        public static readonly string INSTALOADER_URL = "https://play.google.com/store/apps/details?id=green.mobileapps.instaloader";
 
         public static string AbsPathDocs = "";
         public static string AbsPathDocsTemp = "";
@@ -62,7 +60,6 @@ namespace InstaLoaderMaui
 
         public IServiceDownload Services;
         public static int successfulRuns = 0;
-        string currentText = "";
         public static bool MFailedShowInter = false;
         string mTitle = "";
         public string MTitle
@@ -274,15 +271,13 @@ namespace InstaLoaderMaui
         protected override void OnDisappearing()
         {
             base.OnDisappearing();
-
-
+            // destroy webview, client
             if (null != pwv)
             {
                 ((IWebViewHandler)pwv.Handler).PlatformView.SetWebViewClient(null);
                 ((IWebViewHandler)pwv.Handler).PlatformView.Destroy();
                 pwv = null;
             }
-
         }
 
         public static void PrepareFileDirs()
@@ -438,8 +433,6 @@ namespace InstaLoaderMaui
 
         public async Task ShowFinishUI()
         {
-            Console.WriteLine($"{Tag}: ShowFinishUI");
-
             // increment successful runs
             int runs = 1;
             if (Preferences.Default.ContainsKey("SUCCESSFUL_RUNS"))
@@ -493,58 +486,47 @@ namespace InstaLoaderMaui
 
         private void OnAboutClicked(object sender, EventArgs e)
         {
-            Console.WriteLine($"{Tag} OnAboutClicked");
-            OpenFragment("About");
+            var aboutUrl = "https://mobileapps.green/";
+            Intent intent = new Intent(Intent.ActionView, Android.Net.Uri.Parse(aboutUrl));
+            MainActivity.ActivityCurrent.StartActivity(intent);
         }
 
         private void OnHelpClicked(object sender, EventArgs e)
         {
-            Console.WriteLine($"{Tag} OnHelpClicked");
             OpenFragment("Help");
         }
 
         private void OnPrivacyPolicyClicked(object sender, EventArgs e)
         {
-            Console.WriteLine($"{Tag} OnPrivacyPolicyClicked");
-
-            // open privacy policy
-            var privacyUrl = "https://mobileapps.green/privacy-policy"; //Add here the url of your application on the store
+            var privacyUrl = "https://mobileapps.green/privacy-policy";
             Intent intent = new Intent(Intent.ActionView, Android.Net.Uri.Parse(privacyUrl));
             MainActivity.ActivityCurrent.StartActivity(intent);
         }
 
         private void OnUpgradeClicked(object sender, EventArgs e)
         {
-            Console.WriteLine($"{Tag} OnUpgradeClicked");
             if (Preferences.Default.ContainsKey("IS_GOLD"))
             {
                 if (MIsNotGold)
                 {
                     OpenFragment("Upgrade");
                 }
-                else
-                {
-                    // TODO open gold fragment
-                }
             }
-
         }
 
         private void OnPositiveClicked(object sender, EventArgs e)
         {
-            Console.WriteLine($"{Tag}: OnPurchaseClicked");
-
             if (MFragmentPositive == "Rate")
+            {
+                OnRateClicked();
+            }
+            else if (MFragmentPositive == "InstaLoader")
             {
                 OnRateClicked();
             }
             else
             {
-                Console.WriteLine($"{Tag} OnPurchaseClicked");
-#if ANDROID
-                // TODO
-                // MainActivity.ActivityCurrent.LaunchBillingFlow();
-#endif
+                MainActivity.ActivityCurrent.LaunchBillingFlow();
             }
         }
 
@@ -566,9 +548,6 @@ namespace InstaLoaderMaui
 
         public void OpenFragment(string title)
         {
-            Console.WriteLine($"{Tag}: OpenFragment({title})");
-
-            // fill views
             MFragmentTitle = title;
             if (title == "Upgrade")
             {
@@ -579,10 +558,19 @@ namespace InstaLoaderMaui
                 ((Label)FindByName("fragment_body")).LineHeight = 1.5;
                 ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
             }
-            else if (title == "Help")
+            else if (title == "VscoLoader")
             {
+                /* TODO fill vscoloader ad views
                 MFragmentSubtitle = "How to Use InstaLoader";
                 MFragmentBody = "➊  Copy an Instagram link\n    ⓘ  \"Share\" > \"Copy link\"\n➋  Tap ⚡ (or paste link into search bar)\n➌  Tap ⬇ when finished loading\n    ⓘ  Downloaded files are in documents folder";
+                ((Label)FindByName("fragment_body")).LineHeight = 1.25;
+                ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = false;
+                 */
+            }
+            else if (title == "Help")
+            {
+                MFragmentSubtitle = "How to Use InstaLoader:";
+                MFragmentBody = "➊  Copy an Instagram link\n  ⓘ Open Instagram >> \"Share\" >> \"Copy link\"\n➋  Tap ⚡ (paste into search bar)\n➌  Tap download (⬇)\n  ⓘ  Files saved [in Documents]";
                 ((Label)FindByName("fragment_body")).LineHeight = 1.25;
                 ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = false;
             }
@@ -610,9 +598,7 @@ namespace InstaLoaderMaui
 
         public void CloseFragment()
         {
-            Console.WriteLine($"{Tag}: CloseFragment");
             ((AbsoluteLayout)FindByName("fragment_layout")).IsVisible = false;
-            // clear views
             MFragmentTitle = "";
             MFragmentSubtitle = "";
             MFragmentBody = "";
@@ -622,13 +608,14 @@ namespace InstaLoaderMaui
 
         private void OnPasteClicked(object sender, EventArgs e)
         {
-            Console.WriteLine("OnPasteClicked");
             ResetVars();
             ClearTextfield();
 
+            // get clipboard text
             string clip = Clipboard.GetTextAsync().Result;
             Console.WriteLine("clipboard text: " + clip);
 
+            // paste to textfield
             TextField mTextField = (TextField)FindByName("main_textfield");
             mTextField.Text = clip;
         }
@@ -693,13 +680,11 @@ namespace InstaLoaderMaui
                 if (input.Length == 0)
                 {
                     Console.WriteLine("text field text cleared");
-                    currentText = "";
                     ShowEmptyUI();
                 }
                 else if (lengthDiff > 1 || lengthDiff == 0)
                 {
                     Console.WriteLine("text field text pasted");
-                    currentText = input;
                     LoadInput(input);
                 }
                 else if (lengthDiff == 1)

@@ -23,25 +23,31 @@
                      Glyph="{x:Static fa:Solid.Gem}"/>
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
-        <ToolbarItem x:Name="upgrade_secondary_item"
-             Order="Secondary"
-             Text="Upgrade"
-             Clicked="OnUpgradeClicked" />
         <!-- RATE -->
         <ToolbarItem x:Name="rate_item"
              Order="Secondary"
              Text="Rate"
              Clicked="OnRateClicked" />
-        <!-- HELP -->
-        <ToolbarItem x:Name="help_item"
+        <!-- UPGRADE -->
+        <ToolbarItem x:Name="upgrade_secondary_item"
              Order="Secondary"
-             Text="Help"
-             Clicked="OnHelpClicked" />
+             Text="Upgrade"
+             Clicked="OnUpgradeClicked" />
         <!-- PRIVACY -->
         <ToolbarItem x:Name="privacy_item"
              Order="Secondary"
              Text="Privacy"
              Clicked="OnPrivacyPolicyClicked" />
+        <!-- ABOUT -->
+        <ToolbarItem x:Name="about_item"
+             Order="Secondary"
+             Text="About"
+             Clicked="OnAboutClicked" />
+        <!-- HELP -->
+        <ToolbarItem x:Name="help_item"
+             Order="Secondary"
+             Text="Help"
+             Clicked="OnHelpClicked" />
     </ContentPage.ToolbarItems>
 
     <AbsoluteLayout>
@@ -144,6 +150,18 @@
                         AbsoluteLayout.LayoutFlags="PositionProportional,WidthProportional">
                         <StackLayout Orientation="Horizontal"
                             Spacing="10">
+                            <StackLayout VerticalOptions="Center">
+                                <!-- TITLE -->
+                                <Label x:Name="preview_title"
+                                    Text="{Binding MTitle}"
+                                    FontSize="Large"
+                                    TextColor="{AppThemeBinding Dark={StaticResource White}, Light={StaticResource Black}}"
+                                    Margin="5,0,0,0"
+                                    WidthRequest="250"
+                                    MaxLines="1"
+                                    VerticalTextAlignment="Center"
+                                    ZIndex="2" />
+                            </StackLayout>
                             <!-- DOWNLOAD BUTTON -->
                             <material:ButtonView x:Name="dl_btn"
                                 WidthRequest="60"
@@ -155,7 +173,7 @@
                                     <ImageButton.Source>
                                         <FontImageSource FontFamily="FASolid"        
                                             Glyph="{x:Static fa:Solid.CircleDown}" 
-                                            Color="{AppThemeBinding Dark={StaticResource PointEightFive}, Light={StaticResource DarkPointEightFive}}"/>
+                                            Color="{AppThemeBinding Dark={StaticResource PointEightFive}, Light={StaticResource DarkPointEightFive}}"/> 
                                     </ImageButton.Source>
                                 </ImageButton>
                             </material:ButtonView>
@@ -183,18 +201,6 @@
                                     </ImageButton.Source>
                                 </ImageButton>
                             </material:ButtonView>
-                            <StackLayout VerticalOptions="Center">
-                                <!-- TITLE -->
-                                <Label x:Name="preview_title"
-                                    Text="{Binding MTitle}"
-                                    FontSize="Large"
-                                    TextColor="{AppThemeBinding Dark={StaticResource White}, Light={StaticResource Black}}"
-                                    Margin="5,0,0,0"
-                                    WidthRequest="250"
-                                    MaxLines="1"
-                                    VerticalTextAlignment="Center"
-                                    ZIndex="2" />
-                            </StackLayout>
                         </StackLayout>
                     </Frame>
                 </AbsoluteLayout>

@@ -16,7 +16,6 @@ using AndroidHUD;
 using Plugin.MauiMTAdmob.Controls;
 using static InstaLoaderMaui.MainPage;
 using Firebase.Analytics;
-using Android.Net.Wifi.Aware;
 using MPowerKit.ProgressRing;
 
 namespace InstaLoaderMaui;

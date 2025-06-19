@@ -47,8 +47,8 @@ namespace InstaLoaderMaui
         public static string admobIdInterReal = "ca-app-pub-7417392682402637/1763043737";
         public static string admobIdBannerTest = "ca-app-pub-3940256099942544/9214589741";
         public static string admobIdBannerReal = "ca-app-pub-7417392682402637/9820437660";
-        public static string admobIdInter = admobIdInterReal;
-        public string mAdmobIdBanner = admobIdBannerReal;
+        public static string admobIdInter = admobIdInterTest;
+        public string mAdmobIdBanner = admobIdBannerTest;
         public string MAdmobIdBanner
         {
             get { return mAdmobIdBanner; }
@@ -457,16 +457,26 @@ namespace InstaLoaderMaui
             Console.WriteLine($"{Tag} SUCCESSFUL_RUNS={runs}");
 
             // sometimes show popup
-            int cycle = successfulRuns % 6;
-            if (MIsNotGold && (cycle == 2))
+            int cycle = successfulRuns % 12;
+            if (MIsNotGold && (cycle == 1 || cycle == 7))
             {
-                OpenFragment("Rate");
-            } else if (MIsNotGold && (cycle == 3))
+                ShowPopup("Rate");
+            }
+            else if (MIsNotGold && cycle == 3)
             {
-                // OpenFragment("Upgrade");
-            } else if (MIsNotGold && (cycle == 4))
+                ShowPopup("Downloader for Spotify");
+            }
+            else if (MIsNotGold && cycle == 5)
             {
-                OpenFragment("VscoLoader");
+                ShowPopup("Downloader for Soundcloud");
+            }
+            else if (MIsNotGold && cycle == 9)
+            {
+                ShowPopup("Downloader for Videos");
+            }
+            else if (MIsNotGold && cycle == 11)
+            {
+                ShowPopup("Downloader for VSCO");
             }
 
             // show success message
@@ -508,7 +518,7 @@ namespace InstaLoaderMaui
 
         private void OnHelpClicked(object sender, EventArgs e)
         {
-            OpenFragment("Help");
+            ShowPopup("Help");
         }
 
         private void OnPrivacyPolicyClicked(object sender, EventArgs e)
@@ -524,7 +534,7 @@ namespace InstaLoaderMaui
             {
                 if (MIsNotGold)
                 {
-                    OpenFragment("Upgrade");
+                    ShowPopup("Upgrade");
                 }
             }
         }
@@ -535,9 +545,32 @@ namespace InstaLoaderMaui
             {
                 OnRateClicked();
             }
-            else if (MFragmentPositive == "Get App")
+            else if (MFragmentTitle.Contains("Downloader"))
             {
-                OnGetAppClicked("VscoLoader");
+                string title = MFragmentTitle;
+                string playStoreUrl = "";
+                if (title == "Downloader for Spotify")
+                {
+                    playStoreUrl = "https://play.google.com/store/apps/details?id=com.mvxgreen.spotloader";
+                }
+                else if (title == "Downloader for VSCO")
+                {
+                    playStoreUrl = "https://play.google.com/store/apps/details?id=xom.xxxgreen.mvx.downloader4vsco";
+                }
+                else if (title == "Downloader for Videos")
+                {
+                    playStoreUrl = "https://play.google.com/store/apps/details?id=com.mvxgreen.ytdloader";
+                }
+                else if (title == "Downloader for Soundcloud")
+                {
+                    playStoreUrl = "https://play.google.com/store/apps/details?id=com.mvxgreen.downloader4soundcloud";
+                }
+
+                if (playStoreUrl != "")
+                {
+                    Intent intent = new Intent(Intent.ActionView, Android.Net.Uri.Parse(playStoreUrl));
+                    MainActivity.ActivityCurrent.StartActivity(intent);
+                }
             }
             else
             {
@@ -569,7 +602,7 @@ namespace InstaLoaderMaui
             
         }
 
-        public void OpenFragment(string title)
+        public void ShowPopup(string title)
         {
             MFragmentTitle = title;
             if (title == "Upgrade")
@@ -579,15 +612,6 @@ namespace InstaLoaderMaui
                 MFragmentPositive = "Get It!";
                 MFragmentDismiss = "Nah";
                 ((Label)FindByName("fragment_body")).LineHeight = 1.5;
-                ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
-            }
-            else if (title == "VscoLoader")
-            {
-                MFragmentSubtitle = "Downloader for VSCO";
-                MFragmentBody = "Enjoying InstaLoader?\nTry out VscoLoader!\n\nAd by Green Mobile";
-                MFragmentPositive = "Get App";
-                MFragmentDismiss = "Nah";
-                ((Label)FindByName("fragment_body")).LineHeight = 1.25;
                 ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
             }
             else if (title == "Help")
@@ -602,6 +626,42 @@ namespace InstaLoaderMaui
                 MFragmentSubtitle = "InstaLoader";
                 MFragmentBody = "Enjoying the app?\nLet me know!";
                 MFragmentPositive = "Rate";
+                MFragmentDismiss = "Nah";
+                ((Label)FindByName("fragment_body")).LineHeight = 1.25;
+                ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
+            }
+            else if (title == "Downloader for VSCO")
+            {
+                MFragmentSubtitle = "VscoLoader";
+                MFragmentBody = "Enjoying InstaLoader?\nTry VscoLoader!\n\n✦ Ad by Green Mobile ✦";
+                MFragmentPositive = "Get App";
+                MFragmentDismiss = "Nah";
+                ((Label)FindByName("fragment_body")).LineHeight = 1.25;
+                ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
+            }
+            else if (title == "Downloader for Spotify")
+            {
+                MFragmentSubtitle = "SpotiFlyer";
+                MFragmentBody = "Enjoying SoundLoader?\nTry SpotiFlyer!\n\n✦ Ad by Green Mobile ✦";
+                MFragmentPositive = "Get App";
+                MFragmentDismiss = "Nah";
+                ((Label)FindByName("fragment_body")).LineHeight = 1.25;
+                ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
+            }
+            else if (title == "Downloader for Videos")
+            {
+                MFragmentSubtitle = "SaveFrom";
+                MFragmentBody = "Enjoying SoundLoader?\nTry SaveFrom!\n\n✦ Ad by Green Mobile ✦";
+                MFragmentPositive = "Get App";
+                MFragmentDismiss = "Nah";
+                ((Label)FindByName("fragment_body")).LineHeight = 1.25;
+                ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
+            }
+            else if (title == "Downloader for Soundcloud")
+            {
+                MFragmentSubtitle = "SoundLoader";
+                MFragmentBody = "Enjoying VscoLoader?\nTry SoundLoader!\n\n✦ Ad by Green Mobile ✦";
+                MFragmentPositive = "Get App";
                 MFragmentDismiss = "Nah";
                 ((Label)FindByName("fragment_body")).LineHeight = 1.25;
                 ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;

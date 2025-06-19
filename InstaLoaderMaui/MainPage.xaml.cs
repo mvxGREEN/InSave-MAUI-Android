@@ -36,7 +36,7 @@ namespace InstaLoaderMaui
         public static string AbsPathDocs = "";
         public static string AbsPathDocsTemp = "";
         public static string MInput = "";
-        public static bool MInputIsProfile = false;
+        public static bool MInputIsProfile = false, MIsShared = false;
         public static string IgId = "";
         public static string MCookies = Preferences.Default.Get("COOKIES", "");
         public static bool MIsAlreadyLoading = false;
@@ -307,6 +307,8 @@ namespace InstaLoaderMaui
             Console.WriteLine($"{Tag} ResetVars");
             MainPage mp = (MainPage)Shell.Current.CurrentPage;
             MainPage.MFailedShowInter = false;
+            MInputIsProfile = false;
+            MIsShared = false;
             MIsAlreadyLoading = false;
             MDownloadUrls = new List<string>();
             MainActivity.DownloadReceiver.MCount = 0;
@@ -703,6 +705,11 @@ namespace InstaLoaderMaui
 
         private async void OnDownloadClicked(object sender, EventArgs e)
         {
+            OnDownloadClicked();
+        }
+
+        public void OnDownloadClicked()
+        {
             ShowDownloadingUI();
 
             // register finish reciever
@@ -972,20 +979,21 @@ namespace InstaLoaderMaui
             DownloadManager downloadManager = (DownloadManager)
                     MainActivity.ActivityCurrent.GetSystemService(Context.DownloadService);
             Android.Net.Uri fileUri = Android.Net.Uri.Parse(url);
+
+            // set destination
             string fileDir = Android.OS.Environment.DirectoryDocuments;
             string fileExt = ".jpg";
             if (url.Contains(".mp4"))
                 fileExt = ".mp4";
             string fileName = ((MainPage)Shell.Current.CurrentPage).MTitle + "_" + index + fileExt;
-
             Console.WriteLine($"{Tag} fileName={fileName}");
 
+            // start download
             DownloadManager.Request request = new DownloadManager.Request(fileUri);
             request.SetTitle("instaloader");
             request.SetDescription("");
             request.SetNotificationVisibility(DownloadVisibility.VisibleNotifyCompleted);
-            request.SetDestinationInExternalPublicDir(
-                fileDir, fileName);
+            request.SetDestinationInExternalPublicDir(fileDir, fileName);
             downloadManager.Enqueue(request);
         }
 
@@ -1174,6 +1182,8 @@ namespace InstaLoaderMaui
                 {
                     Console.WriteLine($"{Tag} finished loading content page url={url} MIsAlreadyLoading={MIsAlreadyLoading}");
                     Console.WriteLine($"{Tag} hiding webview...");
+                    
+                    // get webview
                     MainPage mp = (MainPage)Shell.Current.CurrentPage;
                     var pmv = (Microsoft.Maui.Controls.WebView)mp.FindByName("preview_webview");
 
@@ -1225,16 +1235,19 @@ namespace InstaLoaderMaui
                         // update thumbnail
                         ((MainPage)Shell.Current.CurrentPage).MThumbnailUrl = MDownloadUrls.FirstOrDefault();
 
-                        // update ui
+                        // update webview
                         pmv.IsVisible = false;
-                        //ProgressRing pr = (ProgressRing)mp.FindByName("progress_ring");
-                        //Image previewImg = (Image)mp.FindByName("preview_img");
-                        //pr.IsVisible = true;
-                        //previewImg.IsVisible = true;
                         ((IWebViewHandler)pmv.Handler).PlatformView.SetWebViewClient(null);
                         pmv.IsVisible = false;
                         pmv.IsEnabled = false;
-                        ((MainPage)Shell.Current.CurrentPage).ShowPreviewUI();
+
+                        if (MIsShared)
+                        {
+                            mp.OnDownloadClicked();
+                        } else
+                        {
+                            ((MainPage)Shell.Current.CurrentPage).ShowPreviewUI();
+                        }
                     });
 
 

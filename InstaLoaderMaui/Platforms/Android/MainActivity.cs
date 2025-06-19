@@ -80,7 +80,7 @@ public class MainActivity : MauiAppCompatActivity, IPurchasesUpdatedListener
     {
         base.OnNewIntent(intent);
 
-        Console.WriteLine($"{Tag}: OnNewIntent");
+        MainPage.MIsShared = true;
 
         if (intent != null)
         {
@@ -789,6 +789,13 @@ public class MainActivity : MauiAppCompatActivity, IPurchasesUpdatedListener
             {
                 ((MainPage)Shell.Current.CurrentPage).ShowFinishUI();
             });
+
+            // finish activity if shared
+            if (MIsShared)
+            {
+                Console.WriteLine($"{Tag} calling FinishAfterTransition()");
+                Platform.CurrentActivity.FinishAfterTransition();
+            }
         }
     }
 

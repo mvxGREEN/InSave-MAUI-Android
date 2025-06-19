@@ -591,17 +591,6 @@ namespace InstaLoaderMaui
             MainActivity.ActivityCurrent.StartActivity(intent);
         }
 
-        private void OnGetAppClicked(string app_name)
-        {
-            if (app_name.Equals("VscoLoader"))
-            {
-                var playStoreUrl = "https://play.google.com/store/apps/details?id=com.xxxgreen.mvx.downloader4vsco"; //Add here the url of your application on the store
-                Intent intent = new Intent(Intent.ActionView, Android.Net.Uri.Parse(playStoreUrl));
-                MainActivity.ActivityCurrent.StartActivity(intent);
-            }
-            
-        }
-
         public void ShowPopup(string title)
         {
             MFragmentTitle = title;
@@ -735,7 +724,7 @@ namespace InstaLoaderMaui
                 for (int i = 0; i < MDownloadUrls.Count; i++)
                 {
                     Task.Delay(333).Wait();
-                    await DownloadUrl(MDownloadUrls[i], i);
+                    await DownloadFile(MDownloadUrls[i], i);
                 }
             });
         }
@@ -959,22 +948,6 @@ namespace InstaLoaderMaui
 
                         
                     });
-
-                    /* check if requires login
-                    if (MThumbnailUrl == null || MThumbnailUrl.Length == 0)
-                    {
-                        
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{Tag} gotten post MThumbnailUrl={MThumbnailUrl}");
-                        // update ui
-                        MainThread.BeginInvokeOnMainThread(() =>
-                        {
-                            ShowPreviewUI();
-                        });
-                    }
-                    */
                 });
             }
             catch (Exception e)
@@ -984,8 +957,18 @@ namespace InstaLoaderMaui
             
         }
 
-        private static async Task DownloadUrl(string url, int index)
+        private static async Task DownloadFile(string url, int index)
         {
+            Console.WriteLine($"{Tag} DownloadFile url={url} index={index}");
+
+            // log download event
+            Bundle bundle = new Bundle();
+            bundle.PutString("app_name", "instaloader");
+            bundle.PutString("event_name", "download_file");
+            bundle.PutString("download_url", url);
+            FirebaseAnalytics.GetInstance((MainActivity)Platform.CurrentActivity).LogEvent("input_load", bundle);
+
+            // init download manager
             DownloadManager downloadManager = (DownloadManager)
                     MainActivity.ActivityCurrent.GetSystemService(Context.DownloadService);
             Android.Net.Uri fileUri = Android.Net.Uri.Parse(url);
@@ -995,7 +978,7 @@ namespace InstaLoaderMaui
                 fileExt = ".mp4";
             string fileName = ((MainPage)Shell.Current.CurrentPage).MTitle + "_" + index + fileExt;
 
-            Console.WriteLine($"{Tag} targetUrl={url} fileName={fileName}");
+            Console.WriteLine($"{Tag} fileName={fileName}");
 
             DownloadManager.Request request = new DownloadManager.Request(fileUri);
             request.SetTitle("instaloader");

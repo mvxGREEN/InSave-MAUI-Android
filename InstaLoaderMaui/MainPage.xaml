@@ -30,9 +30,9 @@
              Clicked="OnRateClicked" />
         <!-- UPGRADE
         <ToolbarItem x:Name="upgrade_secondary_item"
-     Order="Secondary"
-     Text="Upgrade"
-     Clicked="OnUpgradeClicked"/>-->
+             Order="Secondary"
+             Text="Upgrade"
+             Clicked="OnUpgradeClicked"/>-->
         
         <!-- PRIVACY -->
         <ToolbarItem x:Name="privacy_item"

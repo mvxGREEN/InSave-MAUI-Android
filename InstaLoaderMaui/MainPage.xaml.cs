@@ -805,9 +805,7 @@ namespace InstaLoaderMaui
             var match = Regex.Match(input, INPUT_REGEX, RegexOptions.IgnoreCase);
             if (!match.Success)
             {
-                Console.WriteLine($"{Tag} input invalid");
-
-                // log event
+                // log invalid input
                 try
                 {
                     Bundle bun = new();
@@ -1046,15 +1044,6 @@ namespace InstaLoaderMaui
                 CookieManager.Instance.SetCookie("https://www.instagram.com/?hl=en", "wd=1680x881");
                 CookieManager.Instance.SetCookie(MInput, "wd=1680x881");
                 Console.WriteLine($"{Tag} adjusted width MCookies={MCookies}");
-
-                /*
-                 // show webview if story
-                if (url.Contains(".com/s/") || url.Contains(".com/stories/"))
-                {
-                    var pwv = (Microsoft.Maui.Controls.WebView)((MainPage)Shell.Current.CurrentPage).FindByName("preview_webview");
-                    pwv.IsVisible = true;
-                }
-                 */
 
                 if (url.Contains(".com/accounts/login"))
                 {

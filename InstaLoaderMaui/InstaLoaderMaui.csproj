@@ -21,7 +21,7 @@
 		<!--UseMauiEssentials>true</UseMauiEssentials-->
 
 		<!-- Display name -->
-		<ApplicationTitle>InFlyer</ApplicationTitle>
+		<ApplicationTitle>InSave</ApplicationTitle>
 
 		<!-- App Identifier -->
 		<ApplicationId>green.mobileapps.downloader4inflact</ApplicationId>

@@ -240,7 +240,7 @@
                  CornerRadius="8"
                  ZIndex="1"
                  Margin="10,60"
-                 AbsoluteLayout.LayoutBounds="0,0,1,460"
+                 AbsoluteLayout.LayoutBounds="0,0,1,400"
                  AbsoluteLayout.LayoutFlags="PositionProportional,WidthProportional">
                 <Grid>
                     <VerticalStackLayout>
@@ -251,6 +251,7 @@
                                 <Label 
                                      x:Name="fragment_title"
                                      Text="{Binding MFragmentTitle}"
+                                     FontFamily="GotuRegular"
                                      FontAttributes="Bold"
                                      FontSize="Large"
                                      TextColor="{StaticResource DarkPointEightFive}"
@@ -260,7 +261,8 @@
                                 <Label 
                                      x:Name="fragment_subtitle"
                                      Text="{Binding MFragmentSubtitle}"
-                                     FontSize="Large"
+                                     FontFamily="GotuRegular"
+                                     FontSize="Medium"
                                      TextColor="{StaticResource DarkPointEight}"
                                      VerticalTextAlignment="Start"
                                      ZIndex="2" />
@@ -272,9 +274,10 @@
                         <Label 
                              x:Name="fragment_body"
                              Text="{Binding MFragmentBody}"
-                             FontSize="Body"
+                             FontFamily="GotuRegular"
+                             FontSize="Small"
                              TextColor="{StaticResource DarkPointEight}"
-                             Margin="20"
+                             Margin="16"
                              VerticalTextAlignment="Start"
                              HorizontalTextAlignment="Start"
                              ZIndex="2"

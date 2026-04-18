@@ -1,4 +1,4 @@
-# InSave-Android 📱
+# InSave-Android 📸
 
 A fast and efficient Android application built with the .NET MAUI framework, designed to help you easily download Instagram photos, videos, and stories.
 

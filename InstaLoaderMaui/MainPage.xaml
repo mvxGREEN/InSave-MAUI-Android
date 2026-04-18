@@ -4,41 +4,12 @@
              xmlns:material="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
              xmlns:fa="clr-namespace:UraniumUI.Icons.FontAwesome;assembly=UraniumUI.Icons.FontAwesome"
              xmlns:input="clr-namespace:InputKit.Shared.Controls;assembly=InputKit.Maui"
-             xmlns:controls="clr-namespace:Plugin.MauiMTAdmob.Controls;assembly=Plugin.MauiMTAdmob"
              xmlns:validation="clr-namespace:InputKit.Shared.Validations;assembly=InputKit.Maui"
              xmlns:pr="clr-namespace:MPowerKit.ProgressRing;assembly=MPowerKit.ProgressRing"
              x:Class="InstaLoaderMaui.MainPage">
 
     <!-- TOOLBAR -->
     <ContentPage.ToolbarItems>
-        <!-- UPGRADE -->
-        <ToolbarItem x:Name="upgrade_item"
-                 Text="Upgrade"
-                 Clicked="OnUpgradeClicked"
-                 IsEnabled="True">
-            <ToolbarItem.IconImageSource>
-                <FontImageSource x:Name="upgrade_fontimagesource"
-                 FontFamily="FASolid" 
-                 Color="{AppThemeBinding Dark={StaticResource PointEight}, Light={StaticResource DarkPointEight}}"  
-                 Glyph="{x:Static fa:Solid.Gem}"/>
-            </ToolbarItem.IconImageSource>
-        </ToolbarItem>
-        <ToolbarItem x:Name="upgrade_secondary_item"
-             Order="Secondary"
-             Text="Upgrade"
-             Clicked="OnUpgradeClicked" />
-        
-        <!-- RATE -->
-        <ToolbarItem x:Name="rate_item"
-             Order="Secondary"
-             Text="Rate"
-             Clicked="OnRateClicked" />
-        <!-- UPGRADE
-        <ToolbarItem x:Name="upgrade_secondary_item"
-             Order="Secondary"
-             Text="Upgrade"
-             Clicked="OnUpgradeClicked"/>-->
-        
         <!-- PRIVACY -->
         <ToolbarItem x:Name="privacy_item"
              Order="Secondary"
@@ -212,11 +183,6 @@
                         </StackLayout>
                     </Frame>
                 </AbsoluteLayout>
-
-                <StackLayout x:Name="banner_ad_container" VerticalOptions="End" HorizontalOptions="Center" IsVisible="{Binding MIsNotGold}">
-                    <controls:MTAdView x:Name="banner_ad" AdsId="{Binding MAdmobIdBanner}" AdSize="LargeBanner"/>
-                </StackLayout>
-
             </VerticalStackLayout>
         </ScrollView>
 
@@ -302,7 +268,6 @@
                         <!-- POSITIVE -->
                         <material:ButtonView>
                             <Button x:Name="positive_button"
-                                Clicked="OnPositiveClicked"
                                 Text="{Binding MFragmentPositive}"
                                 BackgroundColor="{StaticResource GmaGreenDark}"
                                 FontSize="16"

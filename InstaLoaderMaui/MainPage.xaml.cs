@@ -3,14 +3,10 @@ using Android.OS;
 using Android.Views.InputMethods;
 using Android.Webkit;
 using AndroidHUD;
-using Firebase;
-using Firebase.Analytics;
 using Microsoft.Maui.Handlers;
 using MPowerKit.ProgressRing;
-using Plugin.MauiMTAdmob;
 using System.Text.RegularExpressions;
 using UraniumUI.Material.Controls;
-using static Android.Icu.Text.CaseMap;
 using CookieManager = Android.Webkit.CookieManager;
 
 namespace InstaLoaderMaui
@@ -20,29 +16,6 @@ namespace InstaLoaderMaui
         private static readonly string Tag = nameof(MainPage);
 
         public Microsoft.Maui.Controls.WebView pwv;
-
-        public static readonly string AdmobIdApp = "ca-app-pub-7417392682402637~6569990152";
-        public static readonly string AdmobIdInterTest = "ca-app-pub-3940256099942544/1033173712";
-        public static readonly string AdmobIdInterReal = "ca-app-pub-7417392682402637/9248124383";
-        public static readonly string AdmobIdBannerTest = "ca-app-pub-3940256099942544/9214589741";
-        public static readonly string AdmobIdBannerReal = "ca-app-pub-7417392682402637/5503771756";
-
-        public static string admobIdInter = AdmobIdInterTest;
-        public string mAdmobIdBanner = AdmobIdBannerTest;
-        public string MAdmobIdBanner
-        {
-            get { return mAdmobIdBanner; }
-            set
-            {
-                if (value == mAdmobIdBanner)
-                {
-                    return;
-                }
-
-                mAdmobIdBanner = value;
-                OnPropertyChanged(nameof(MAdmobIdBanner));
-            }
-        }
 
         private uint ANIM_LENGTH = 333;
         private readonly string INPUT_REGEX = "^$|(?:instagram\\.com\\/)";
@@ -192,58 +165,6 @@ namespace InstaLoaderMaui
             }
         }
 
-        string mFragmentPositive = "";
-        public string MFragmentPositive
-        {
-            get { return mFragmentPositive; }
-            set
-            {
-                if (value == mFragmentPositive)
-                {
-                    return;
-                }
-
-                mFragmentPositive = value;
-                OnPropertyChanged("MFragmentPositive");
-            }
-        }
-
-        string mFragmentDismiss = "";
-        public string MFragmentDismiss
-        {
-            get { return mFragmentDismiss; }
-            set
-            {
-                if (value == mFragmentDismiss)
-                {
-                    return;
-                }
-
-                mFragmentDismiss = value;
-                OnPropertyChanged("MFragmentDismiss");
-            }
-        }
-
-        bool mIsNotGold = true;
-        public bool MIsNotGold
-        {
-            get { return mIsNotGold; }
-            set
-            {
-                if (value == mIsNotGold)
-                {
-                    return;
-                }
-
-                mIsNotGold = value;
-                Preferences.Default.Set("IS_GOLD", !value);
-
-                OnPropertyChanged("MIsNotGold");
-
-                UpdateUpgradeItem();
-            }
-        }
-
         public MainPage(IServiceDownload s)
         {
             InitializeComponent();
@@ -257,15 +178,6 @@ namespace InstaLoaderMaui
 
             // prepare destination file dirs
             PrepareFileDirs();
-
-            // check gold
-            MIsNotGold = !Preferences.Default.Get("IS_GOLD", false);
-            Console.WriteLine($"{Tag}, IS_GOLD={!MIsNotGold}");
-
-            // init firebase
-            FirebaseApp.InitializeApp(MainActivity.ActivityCurrent);
-
-            MainActivity.ActivityCurrent.LoadAdmob();
 
             // check for shared intent
             MainActivity.ActivityCurrent.CheckForIntent();
@@ -320,34 +232,12 @@ namespace InstaLoaderMaui
             mp.MMessageToast = "";
         }
 
-        // BILLING 
-        public void UpdateUpgradeItem()
-        {
-            Console.WriteLine($"{Tag} UpdateUpgradeItem() MIsNotGold={MIsNotGold}");
-            
-            if (MIsNotGold)
-            {
-                // white toolbar item
-                FontImageSource fis = (FontImageSource)FindByName("upgrade_fontimagesource");
-                ResourceDictionary ColorResource = Microsoft.Maui.Controls.Application.Current.Resources.MergedDictionaries.FirstOrDefault() as ResourceDictionary;
-                fis.Color = ColorResource["White"] as Color;
-            }
-            else
-            {
-                // gold toolbar item
-                FontImageSource fis = (FontImageSource)FindByName("upgrade_fontimagesource");
-                ResourceDictionary ColorResource = Microsoft.Maui.Controls.Application.Current.Resources.MergedDictionaries.FirstOrDefault() as ResourceDictionary;
-                fis.Color = ColorResource["Gold"] as Color;
-            }
-        }
-
         // USER INTERFACE
         public async Task ShowEmptyUI()
         {
             Console.WriteLine($"{Tag}: ShowEmptyUI");
 
             ResetVars();
-            UpdateUpgradeItem();
             HidePopup();
 
             // clear downloader views
@@ -463,22 +353,6 @@ namespace InstaLoaderMaui
             Preferences.Default.Set("SUCCESSFUL_RUNS", runs);
             Console.WriteLine($"{Tag} SUCCESSFUL_RUNS={runs}");
 
-            // sometimes show popup
-            int cycle = successfulRuns % 4;
-            if (MIsNotGold 
-                && cycle == 0 
-                && CrossMauiMTAdmob.Current.IsInterstitialLoaded())
-            {
-                CrossMauiMTAdmob.Current.ShowInterstitial();
-            }
-            else if (MIsNotGold && cycle == 3)
-            {
-                ShowPopup("Rate");
-            }
-
-            // load next interstitial
-            CrossMauiMTAdmob.Current.LoadInterstitial(admobIdInter);
-
             // show success message
             MMessageToast = $"Saved! In {AbsPathDocs}";
             AndHUD.Shared.ShowSuccess(MainActivity.ActivityCurrent, MMessageToast, MaskType.Black, TimeSpan.FromMilliseconds(2500));
@@ -528,52 +402,6 @@ namespace InstaLoaderMaui
             MainActivity.ActivityCurrent.StartActivity(intent);
         }
 
-        private void OnUpgradeClicked(object sender, EventArgs e)
-        {
-            if (MIsNotGold)
-            {
-                ShowPopup("Upgrade");
-            }
-        }
-
-        private void OnPositiveClicked(object sender, EventArgs e)
-        {
-            string title = MFragmentTitle;
-            string playStoreUrl = "";
-
-            if (title == "Rate")
-            {
-                OnRateClicked();
-            }
-            else if (title == "SpotiFlyer")
-            {
-                playStoreUrl = "https://play.google.com/store/apps/details?id=com.mvxgreen.spotloader";
-            }
-            else if (title == "VscoLoader")
-            {
-                playStoreUrl = "https://play.google.com/store/apps/details?id=xom.xxxgreen.mvx.downloader4vsco";
-            }
-            else if (title == "SaveFrom")
-            {
-                playStoreUrl = "https://play.google.com/store/apps/details?id=com.mvxgreen.ytdloader";
-            }
-            else if (title == "SoundLoader")
-            {
-                playStoreUrl = "https://play.google.com/store/apps/details?id=com.mvxgreen.downloader4soundcloud";
-            }
-            else
-            {
-                Console.WriteLine($"{Tag} OnPurchaseClicked");
-                MainActivity.ActivityCurrent.LaunchBillingFlow("monthly");
-            }
-
-            if (playStoreUrl != "")
-            {
-                Intent intent = new Intent(Intent.ActionView, Android.Net.Uri.Parse(playStoreUrl));
-                MainActivity.ActivityCurrent.StartActivity(intent);
-            }
-        }
-
         private void OnRateClicked(object sender, EventArgs e)
         {
             OnRateClicked();
@@ -590,65 +418,12 @@ namespace InstaLoaderMaui
         public async void ShowPopup(string title)
         {
             MFragmentTitle = title;
-            if (title == "Upgrade")
-            {
-                MFragmentSubtitle = "InSave Gold";
-                MFragmentBody = "✅  Fastest speed\n✅  Ad-Free!";
-                MFragmentPositive = "Get It!";
-                MFragmentDismiss = "Nah";
-                ((Label)FindByName("fragment_body")).LineHeight = 1.5;
-                ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
-            }
-            else if (title == "Help")
+            if (title == "Help")
             {
                 MFragmentSubtitle = "How to Use InSave:";
                 MFragmentBody = "➊  Copy a link\n  ⓘ  Open media >> \"Share\" >> \"Copy link\"\n➋  Tap ⚡ (paste into search bar)\n➌  Tap download (⬇)\n  ⓘ  Files saved [in Documents folder]";
                 ((Label)FindByName("fragment_body")).LineHeight = 1.25;
                 ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = false;
-            }
-            else if (title == "Rate")
-            {
-                MFragmentSubtitle = "InSave";
-                MFragmentBody = "Enjoying the app?\nLet me know!";
-                MFragmentPositive = "Rate";
-                MFragmentDismiss = "Nah";
-                ((Label)FindByName("fragment_body")).LineHeight = 1.25;
-                ((HorizontalStackLayout)FindByName("fragment_btn_layout")).IsVisible = true;
-            }
-            else if (title == "SoundLoader")
-            {
-                MFragmentSubtitle = "Downloader for Soundcloud";
-                MFragmentBody = "You might like this app too\n\n✦Ad by Green Mobile✦";
-                MFragmentPositive = "Free";
-                MFragmentDismiss = "Nah";
-            }
-            else if (title == "InSave")
-            {
-                MFragmentSubtitle = "Downloader for Instagram";
-                MFragmentBody = "You might like this too\n\n✦Ad by Green Mobile✦";
-                MFragmentPositive = "Free";
-                MFragmentDismiss = "Nah";
-            }
-            else if (title == "SaveFrom")
-            {
-                MFragmentSubtitle = "Downloader for Videos";
-                MFragmentBody = "You might like this too\n\n✦Ad by Green Mobile✦";
-                MFragmentPositive = "Free";
-                MFragmentDismiss = "Nah";
-            }
-            else if (title == "VscoLoader")
-            {
-                MFragmentSubtitle = "Downloader for VSCO";
-                MFragmentBody = "You might like this too\n\n✦Ad by Green Mobile✦";
-                MFragmentPositive = "Free";
-                MFragmentDismiss = "Nah";
-            }
-            else if (title == "Musi")
-            {
-                MFragmentSubtitle = "Music Player";
-                MFragmentBody = "Your music.\nFree and ad-free, forever.\n\n🎧Ad by Green Mobile🎧";
-                MFragmentPositive = "Free";
-                MFragmentDismiss = "Nah";
             }
 
             // show fragment
@@ -677,8 +452,6 @@ namespace InstaLoaderMaui
             MFragmentTitle = "";
             MFragmentSubtitle = "";
             MFragmentBody = "";
-            MFragmentPositive = "";
-            MFragmentDismiss = "";
         }
 
         private void OnPasteClicked(object sender, EventArgs e)
@@ -801,20 +574,9 @@ namespace InstaLoaderMaui
             var match = Regex.Match(input, INPUT_REGEX, RegexOptions.IgnoreCase);
             if (!match.Success)
             {
-                // log invalid input
-                try
-                {
-                    Bundle bun = new();
-                    bun.PutString("input", "load");
-                    bun.PutBoolean("input_valid", false);
-                    bun.PutString("input_text", input);
-                    bun.PutString("app_name", "instaloader");
-                    FirebaseAnalytics.GetInstance((MainActivity)Platform.CurrentActivity).LogEvent("input_load", bun);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"{Tag} failed to log event: {e.Message}");
-                }
+                // TODO show invalid input toast
+
+                Console.WriteLine("Invalid Input");
                 return;
             }
 
@@ -825,21 +587,6 @@ namespace InstaLoaderMaui
             input = input[input.IndexOf("https://")..];
             MInput = input + "&size=1";
             Console.WriteLine($"{Tag} MInput={MInput}");
-
-            // log event
-            try
-            {
-                Bundle bundle = new Bundle();
-                bundle.PutString("app_name", "instaloader");
-                bundle.PutString("event_name", "input_load");
-                bundle.PutBoolean("input_valid", true);
-                bundle.PutString("input_text", input);
-                FirebaseAnalytics.GetInstance((MainActivity)Platform.CurrentActivity).LogEvent("input_load", bundle);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"{Tag} failed to log event: {e.Message}");
-            }
 
             // get id
             if (input.Contains(".com/p/") || input.Contains(".com/reel/"))
@@ -1128,13 +875,6 @@ namespace InstaLoaderMaui
                         mp.MTitle = pn;
                         Console.WriteLine($"{Tag} extracted profile name MTitle={mp.MTitle}");
 
-                        Bundle bundle = new Bundle();
-                        bundle.PutString("app_name", "instaloader");
-                        bundle.PutString("event_name", "input_loaded");
-                        bundle.PutString("input_url", url);
-                        bundle.PutString("filename", mp.MTitle);
-                        FirebaseAnalytics.GetInstance((MainActivity)Platform.CurrentActivity).LogEvent("input_load", bundle);
-
                         // extract download urls
                         MDownloadUrls = ExtractUrlsFromHtml(res);
                         foreach (string url in MDownloadUrls)
@@ -1174,10 +914,7 @@ namespace InstaLoaderMaui
                             ((MainPage)Shell.Current.CurrentPage).ShowPreviewUI();
                         }
                     });
-
-
                 }
-
                 base.OnPageFinished(view, url);
             }
 

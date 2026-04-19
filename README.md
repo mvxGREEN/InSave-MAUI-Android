@@ -30,7 +30,7 @@ To get a local copy up and running, follow these simple steps.
 ### Installation & Build
 
 1. **Clone the repository**
-    `git clone https://github.com/mvxGREEN/InSave-Android.git`
+    `git clone https://github.com/mvxGREEN/InSave.git`
 
 2. **Open the project in Visual Studio**
    * Launch Visual Studio 2022.
@@ -52,7 +52,7 @@ To get a local copy up and running, follow these simple steps.
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome! 
-Feel free to check the [issues page](https://github.com/mvxGREEN/InSave-Android/issues) if you want to contribute. 
+Feel free to check the [issues page](https://github.com/mvxGREEN/InSave/issues) if you want to contribute. 
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)

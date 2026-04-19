@@ -1,4 +1,4 @@
-# InSave 📸⬇️
+# InSave ⬇️
 
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/mvxGREEN/InSave/actions)
 [![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](http://www.wtfpl.net/about/)
@@ -6,7 +6,7 @@
 [![Platform: Android](https://img.shields.io/badge/Platform-Android-3DDC84.svg)](https://developer.android.com/)
 [![Framework: .NET](https://img.shields.io/badge/Framework-.NET-512BD4.svg)](https://dotnet.microsoft.com/)
 
-**InSave** is a URL-to-Offline Instagram downloader app built for Android with the .NET MAUI framework.  
+**InSave** is an Instagram downloader app built with the .NET MAUI framework for Android.  
 
 Quickly download Instagram posts, photos, videos, stories, reels and more.
 

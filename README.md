@@ -1,6 +1,6 @@
 # InSave 📸⬇️
 
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/mvxGREEN/InSave/actions)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/mvxGREEN/InSave-MAUI/actions)
 [![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](http://www.wtfpl.net/about/)
 [![Language: C#](https://img.shields.io/badge/Language-C%23-blue.svg)](https://learn.microsoft.com/en-us/dotnet/csharp/)
 [![Platform: Android](https://img.shields.io/badge/Platform-Android-3DDC84.svg)](https://developer.android.com/)
@@ -31,7 +31,7 @@ To get a local copy up and running, follow these simple steps.
 ### Installation & Build
 
 1. **Clone the repository**
-    `git clone https://github.com/mvxGREEN/InSave.git`
+    `git clone https://github.com/mvxGREEN/InSave-MAUI.git`
 
 2. **Open the project in Visual Studio**
    * Launch Visual Studio 2022.
@@ -53,7 +53,7 @@ To get a local copy up and running, follow these simple steps.
 
 ## 🤝 Contributing
 Contributions, issues, and feature requests are welcome! 
-Feel free to check the [issues page](https://github.com/mvxGREEN/InSave/issues) if you want to contribute. 
+Feel free to check the [issues page](https://github.com/mvxGREEN/InSave-MAUI/issues) if you want to contribute. 
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
